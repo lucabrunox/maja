@@ -52,29 +52,29 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
-	public JSExpressionBuilder call_new (JSList? arguments = null) {
+	public JSExpressionBuilder call_new (JSCode? arguments = null) {
 		call (arguments);
 		keyword ("new");
 		return this;
 	}
 
 	public JSExpressionBuilder assign (JSCode code) {
-		current = new JSOperation (current, "=", code);
+		current = new JSOperation (current, " = ", code);
 		return this;
 	}
 
 	public JSExpressionBuilder plus (JSCode code) {
-		current = new JSOperation (current, "+", code, true);
+		current = new JSOperation (current, " + ", code, true);
 		return this;
 	}
 
 	public JSExpressionBuilder equal (JSCode code) {
-		current = new JSOperation (current, "==", code, true);
+		current = new JSOperation (current, " == ", code, true);
 		return this;
 	}
 
 	public JSExpressionBuilder inequal (JSCode code) {
-		current = new JSOperation (current, "!=", code, true);
+		current = new JSOperation (current, " != ", code, true);
 		return this;
 	}
 

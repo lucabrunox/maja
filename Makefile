@@ -6,7 +6,7 @@ DESTDIR = $(PREFIX)
 all: majac
 
 majac: $(SRCS)
-	$(VALAC) -g -o majac --thread --pkg libvala-0.12 --pkg gee-1.0 $+
+	$(VALAC) -g -o majac --thread --pkg libvala-0.12 --pkg gee-1.0 -g --save-temps $+
 
 install: majac
 	install -c ./majac -D $(DESTDIR)/bin/majac
