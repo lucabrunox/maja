@@ -306,14 +306,23 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_class (Class cl) {
 		push_context (new EmitContext (cl));
+
+		// constructor defines the class too
+		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
+		if (cl.base_class != null) {
+			jsdecl.stmt (jsmember(cl.name).member("prototype").assign (jsmember(cl.base_class.get_full_name()).keyword("new")));
+		}
+
 		// init function
 		init_emit_context = new EmitContext (cl);
 		push_context (init_emit_context);
 		var init_func = jsfunction ();
 		push_function (init_func);
+		if (cl.base_class != null) {
+			js.stmt (jsmember(cl.base_class.get_full_name()).member("prototype._maja_init").bind().call());
+		}
 		pop_context ();
 
-		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
 		jsdecl.stmt (jsmember(cl.name).member("prototype._maja_init").assign (init_func));
 
 		cl.accept_children (this);
@@ -432,12 +441,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		set_jsvalue (expr, jstext (expr.value + expr.type_suffix));
 	}
 
+	public override void visit_string_literal (StringLiteral expr) {
+		set_jsvalue (expr, jstext (expr.value.replace("\n", "\\n")));
+	}
+
 	public override void visit_return_statement (ReturnStatement stmt) {
 		var m = current_method;
 		JSExpressionBuilder result = null;
 		if (stmt.return_expression != null) {
 			stmt.return_expression.emit (this);
-			result = jsexpr (get_jsvalue (stmt.return_expression));
+			result = get_jsvalue (stmt.return_expression);
 		}
 
 		bool has_out_parameters = false;
@@ -503,19 +516,23 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public override void visit_assignment (Assignment expr) {
 		expr.left.emit (this);
 		expr.right.emit (this);
-		set_jsvalue (expr, jsexpr (get_jsvalue (expr.left)).assign (get_jsvalue (expr.right)));
+		set_jsvalue (expr, get_jsvalue (expr.left).assign (get_jsvalue (expr.right)));
 	}
 
 	public override void visit_method_call (MethodCall expr) {
-		set_jsvalue (expr, jsexpr (get_jsvalue (expr.call)).call (generate_jslist (expr.get_argument_list ())));
+		set_jsvalue (expr, get_jsvalue (expr.call).call (generate_jslist (expr.get_argument_list ())));
 	}
 
-	public JSCode? get_jsvalue (Expression expr) {
+	public override void visit_base_access (BaseAccess expr) {
+		set_jsvalue (expr, jsmember (expr.symbol_reference.get_full_name()).bind());
+	}
+
+	public JSExpressionBuilder? get_jsvalue (Expression expr) {
 		if (expr.target_value == null) {
 			return null;
 		}
 		var js_value = (JSValue) expr.target_value;
-		return js_value.jscode;
+		return jsexpr(js_value.jscode);
 	}
 
 	public void set_jsvalue (Expression expr, JSCode code) {

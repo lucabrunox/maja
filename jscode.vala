@@ -63,6 +63,15 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder bind (JSCode? instance = null) {
+		var arg = instance;
+		if (arg == null) {
+			arg = new JSText ("this");
+		}
+		member ("bind").call (arg);
+		return this;
+	}
+
 	public JSExpressionBuilder assign (JSCode code) {
 		current = new JSOperation (current, " = ", code);
 		return this;
