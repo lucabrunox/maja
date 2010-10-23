@@ -313,6 +313,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_function (init_func);
 		pop_context ();
 
+		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
 		jsdecl.stmt (jsmember(cl.name).member("prototype._maja_init").assign (init_func));
 
 		cl.accept_children (this);
@@ -353,25 +354,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_creation_method (CreationMethod m) {
-		push_context (new EmitContext (m));
-
-		var func = jsfunction ();
-		push_function (func);
-		if (!m.chain_up) {
-			js.stmt (jsmember ("this._maja_init").call ());
-		}
-		m.accept_children (this);
-		pop_context ();
-
-		// declare function
-		var jscode = jsmember (current_type_symbol.get_full_name ());
-		if (m.name != ".new") {
-			jscode.member (m.name);
-		}
-		jsdecl.stmt (jsexpr(jscode).assign (func));
-		if (m.name != ".new") {
-			jsdecl.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
-		}
+		var cl = current_class;
+		if (cl == null || m == cl.default_construction_method)
+			return;
+		generate_construction_method (cl, m);
 	}
 
 	public override void visit_formal_parameter (FormalParameter param) {
@@ -504,10 +490,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_object_creation_expression (ObjectCreationExpression expr) {
-		var sym = expr.type_reference.data_type;
-		var jscode = jsmember (sym.get_full_name ());
-		if (expr.member_name.symbol_reference is CreationMethod)
-			jscode.member (expr.member_name.symbol_reference.name);
+		var cl = expr.type_reference.data_type as Class;
+		if (cl == null)
+			return;
+		var jscode = jsmember (cl.get_full_name ());
+		if (expr.symbol_reference != cl.default_construction_method)
+			jscode.member (expr.symbol_reference.name);
 		jscode.call_new (generate_jslist (expr.get_argument_list ()));
 		set_jsvalue (expr, jscode);
 	}
@@ -516,6 +504,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		expr.left.emit (this);
 		expr.right.emit (this);
 		set_jsvalue (expr, jsexpr (get_jsvalue (expr.left)).assign (get_jsvalue (expr.right)));
+	}
+
+	public override void visit_method_call (MethodCall expr) {
+		set_jsvalue (expr, jsexpr (get_jsvalue (expr.call)).call (generate_jslist (expr.get_argument_list ())));
 	}
 
 	public JSCode? get_jsvalue (Expression expr) {
@@ -595,6 +587,29 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			rhs = jsnull ();
 		}
 		js.stmt (jsvar(local.name).assign(rhs));
+
+	}
+
+	public void generate_construction_method (Class cl, CreationMethod m) {
+		push_context (new EmitContext (m));
+
+		var func = jsfunction ();
+		push_function (func);
+		if (!m.chain_up) {
+			js.stmt (jsmember ("this._maja_init").call ());
+		}
+		m.accept_children (this);
+		pop_context ();
+
+		// declare function
+		var jscode = jsmember (current_type_symbol.get_full_name ());
+		if (m.name != ".new") {
+			jscode.member (m.name);
+		}
+		jsdecl.stmt (jsexpr(jscode).assign (func));
+		if (m.name != ".new") {
+			jsdecl.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
+		}
 	}
 }
 
