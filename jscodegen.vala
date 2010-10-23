@@ -474,13 +474,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 	}
 
-	public override void visit_member_access (MemberAccess expr) {
-		JSCode jscode = null;
-		if (expr.symbol_reference is LocalVariable || expr.symbol_reference is FormalParameter) {
-			jscode = jsmember (expr.symbol_reference.name);
-		} else
-			jscode = jsmember (expr.symbol_reference.get_full_name ());
-		set_jsvalue (expr, jscode);
+	public override void visit_member_access (MemberAccess ma) {
+		JSCode jscode = jsmember (ma.member_name);
+		var expr = ma.inner as MemberAccess;
+		while (expr != null) {
+			jscode = jsmember (expr.member_name).access (jscode);
+			expr = expr.inner as MemberAccess;
+		}
+		set_jsvalue (ma, jscode);
 	}
 
 	public override void visit_field (Field field) {
@@ -509,6 +510,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			jscode.member (expr.member_name.symbol_reference.name);
 		jscode.call_new (generate_jslist (expr.get_argument_list ()));
 		set_jsvalue (expr, jscode);
+	}
+
+	public override void visit_assignment (Assignment expr) {
+		expr.left.emit (this);
+		expr.right.emit (this);
+		set_jsvalue (expr, jsexpr (get_jsvalue (expr.left)).assign (get_jsvalue (expr.right)));
 	}
 
 	public JSCode? get_jsvalue (Expression expr) {

@@ -40,10 +40,15 @@ public class Maja.JSExpressionBuilder : JSCode {
 	}
 
 	public JSExpressionBuilder member (string name) {
+		access (new JSText (name));
+		return this;
+	}
+
+	public JSExpressionBuilder access (JSCode member) {
 		if (current == null)
-			current = new JSText (name);
+			current = member;
 		else
-			current = new JSOperation (current, ".", new JSText (name));
+			current = new JSOperation (current, ".", member);
 		return this;
 	}
 
