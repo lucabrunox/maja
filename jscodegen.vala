@@ -309,8 +309,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		// create real constructor
 		var constructor = jsfunction ();
-		constructor.stmt(jsexpr().member("this").member("_maja_init").call ());
-		jsdecl.stmt (jsexpr().member(cl.name).assign(constructor));
+		constructor.stmt(jsmember("this").member("_maja_init").call ());
+		jsdecl.stmt (jsmember(cl.name).assign(constructor));
 
 		// init function
 		init_emit_context = new EmitContext (cl);
@@ -319,7 +319,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_function (init_func);
 		pop_context ();
 
-		jsdecl.stmt (jsexpr().member(cl.name).member("prototype").member("_maja_init").assign (init_func));
+		jsdecl.stmt (jsmember(cl.name).member("prototype").member("_maja_init").assign (init_func));
 
 		cl.accept_children (this);
 		pop_context ();
@@ -327,6 +327,20 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_method (Method m) {
 		push_context (new EmitContext (m));
+
+		if (m.body != null) {
+			bool return_found = false;
+			// add default return if there's none
+			foreach (var stmt in m.body.get_statements ()) {
+				if (stmt is ReturnStatement) {
+					return_found = true;
+					break;
+				}
+			}
+			if (!return_found)
+				m.body.add_statement (new ReturnStatement ());
+		}
+
 		var func = jsfunction ();
 		push_function (func);
 		m.accept_children (this);
@@ -335,13 +349,43 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		// declare function
 		var def = jsexpr ();
 		if (current_type_symbol != null) {
-			def.text (current_type_symbol.get_full_name ());
+			def.member (current_type_symbol.get_full_name ());
 			if (m.binding == MemberBinding.INSTANCE) {
 				def.member ("prototype");
 			}
 		}
 		def.member (m.name).assign (func);
 		jsdecl.stmt (def);
+	}
+
+	public override void visit_formal_parameter (FormalParameter param) {
+		if (param.direction == ParameterDirection.IN) {
+			// never assign a value directly to a parameter in javascript
+			var param_list = (JSList) js.current.expr;
+			param_list.add_string ("param_"+param.name);
+			// initialize default
+			// declare local variable for parameter
+			js.stmt (jsvar(param.name).assign (jsnull ()));
+			js.open_if (jsmember("param_"+param.name).inequal (jstext("undefined")));
+			js.stmt (jsmember(param.name).assign (jsmember("param_"+param.name)));
+			js.add_else ();
+			if (param.initializer != null) {
+				param.initializer.emit (this);
+				js.stmt (jsmember(param.name).assign (get_jsvalue (param.initializer)));
+			} else {
+				js.error (jsstring ("Undefined parameter '"+param.name+"'"));
+			}
+			js.end ();
+		} else {
+			JSCode rhs = null;
+			if (param.initializer != null) {
+				param.initializer.emit (this);
+				rhs = get_jsvalue (param.initializer);
+			} else {
+				rhs = jsnull ();
+			}
+			js.stmt (jsvar(param.name).assign (rhs));
+		}
 	}
 
 	public override void visit_block (Block block) {
@@ -360,9 +404,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			local.initializer.emit (this);
 			rhs = get_jsvalue (local.initializer);
 		} else {
-			rhs = jsexpr().null_literal();
+			rhs = jsnull ();
 		}
-		js.stmt (jsexpr().member(local.name).keyword("var").assign (rhs));
+		js.stmt (jsvar(local.name).assign (rhs));
 	}
 
 	public override void visit_binary_expression (BinaryExpression expr) {
@@ -376,19 +420,42 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_integer_literal (IntegerLiteral expr) {
-		set_jsvalue (expr, jsexpr().text (expr.value + expr.type_suffix));
+		set_jsvalue (expr, jstext (expr.value + expr.type_suffix));
 	}
 
 	public override void visit_return_statement (ReturnStatement stmt) {
-		stmt.accept_children (this);
-		js.stmt (jsexpr(get_jsvalue (stmt.return_expression)).keyword ("return"));
+		var m = current_method;
+		JSExpressionBuilder result = null;
+		if (stmt.return_expression != null) {
+			stmt.return_expression.emit (this);
+			result = jsexpr (get_jsvalue (stmt.return_expression));
+		}
+
+		bool has_out_parameters = false;
+		foreach (var param in m.get_parameters ()) {
+			if (param.direction == ParameterDirection.IN)
+				continue;
+ 			if (!has_out_parameters) {
+				has_out_parameters = true;
+				if (result == null)
+					result = jsexpr().array ();
+				else
+					result.array ();
+			}
+			result.add_array_element (jstext (param.name));
+		}
+
+		if (result != null) {
+			js.stmt (jsvar ("_maja_result").assign (result));
+			js.stmt (jsmember ("_maja_result").keyword ("return"));
+		}
 	}
 
 	public override void visit_member_access (MemberAccess expr) {
 		var local = expr.symbol_reference as LocalVariable;
 		var jscode = jsexpr ();
 		if (local != null) {
-			jscode.text (local.name);
+			jscode.member (local.name);
 		}
 		set_jsvalue (expr, jscode);
 	}
@@ -401,9 +468,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				field.initializer.emit (this);
 				rhs = get_jsvalue (field.initializer);
 			} else {
-				rhs = jsexpr().null_literal();
+				rhs = jsnull ();
 			}
-			js.stmt (jsexpr().member("this").member(field.name).assign (rhs));
+			js.stmt (jsmember("this").member(field.name).assign (rhs));
 			pop_context ();
 		}
 	}
@@ -426,6 +493,54 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public JSExpressionBuilder jsexpr (JSCode? initial = null) {
 		return new JSExpressionBuilder (initial);
+	}
+
+
+	public JSExpressionBuilder jstext (string text) {
+		return jsexpr (new JSText (text));
+	}
+
+	public JSExpressionBuilder jsmember (string name) {
+		return jstext (name);
+	}
+
+	public JSExpressionBuilder jsnull () {
+		return jstext ("null");
+	}
+
+	public JSExpressionBuilder jsvar (string name) {
+		var result = jsmember (name);
+		result.keyword ("var");
+		return result;
+	}
+
+	public JSExpressionBuilder jsstring (string value) {
+		return jstext ("\"%s\"".printf (value));
+	}
+
+	public LocalVariable get_temp_variable (DataType type, bool value_owned = true, CodeNode? node_reference = null, bool init = true) {
+		var var_type = type.copy ();
+		var_type.value_owned = value_owned;
+		var local = new LocalVariable (var_type, "_tmp%d_".printf (next_temp_var_id));
+		local.no_init = !init;
+
+		if (node_reference != null) {
+			local.source_reference = node_reference.source_reference;
+		}
+
+		next_temp_var_id++;
+
+		return local;
+	}
+
+	public void emit_temp_var (LocalVariable local) {
+		JSCode rhs = null;
+		if (local.initializer != null) {
+			rhs = get_jsvalue (local.initializer);
+		} else {
+			rhs = jsnull ();
+		}
+		js.stmt (jsvar(local.name).assign(rhs));
 	}
 }
 

@@ -10,8 +10,17 @@ public class Maja.JSExpressionBuilder : JSCode {
 		this.current = initial;
 	}
 
-	public JSExpressionBuilder text (string text) {
-		current = new JSText (text);
+	public JSExpressionBuilder array () {
+		var list = new JSList (true);
+		if (current != null)
+			list.add (current);
+		current = list;
+		return this;
+	}
+
+	public JSExpressionBuilder add_array_element (JSCode element) {
+		var list = ((JSList) current);
+		list.add (element);
 		return this;
 	}
 
@@ -20,13 +29,13 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
-	public JSExpressionBuilder null_literal () {
-		current = new JSText ("null");
+	public JSExpressionBuilder object_literal () {
+		current = new JSObjectLiteral ();
 		return this;
 	}
 
-	public JSExpressionBuilder object () {
-		current = new JSObjectLiteral ();
+	public JSExpressionBuilder string_literal (string text) {
+		current = new JSText ("\"%s\"".printf (text));
 		return this;
 	}
 
@@ -38,8 +47,14 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
-	public JSExpressionBuilder call (JSList? arguments = null) {
+	public JSExpressionBuilder call (JSCode? arguments = null) {
 		current = new JSCall (current, arguments);
+		return this;
+	}
+
+	public JSExpressionBuilder call_new (JSList? arguments = null) {
+		call (arguments);
+		keyword ("new");
 		return this;
 	}
 
@@ -50,6 +65,16 @@ public class Maja.JSExpressionBuilder : JSCode {
 
 	public JSExpressionBuilder plus (JSCode code) {
 		current = new JSOperation (current, "+", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder equal (JSCode code) {
+		current = new JSOperation (current, "==", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder inequal (JSCode code) {
+		current = new JSOperation (current, "!=", code, true);
 		return this;
 	}
 
@@ -104,22 +129,25 @@ public class Maja.JSOperation : JSCode {
 }
 
 public class Maja.JSBlockBuilder : JSCode {
-	private JSBlock current;
+	public JSBlock current;
 
 	public JSBlockBuilder (JSBlock block) {
 		current = block;
-	}
-
-	public JSList parameters () {
-		return new JSList ();
 	}
 
 	public void stmt (JSCode code) {
 		current.statements.add (code);
 	}
 
+	public void error (JSCode code) {
+		var expr = new JSExpressionBuilder (new JSText ("Error"));
+		expr.call_new (new JSList().add (code));
+		current.statements.add (new JSKeyword ("throw", expr));
+	}
+
 	public void open_if (JSCode condition) {
-		current = new JSBlock (current, "if", condition);
+		var parent = current;
+		current = new JSBlock (parent, "if", condition);
 	}
 
 	public void add_else () {
@@ -166,8 +194,10 @@ public class Maja.JSBlock : JSCode {
 	public JSCode expr;
 
 	public JSBlock (JSBlock? parent = null, string? keyword = null, JSCode? expr = null) {
-		if (parent != null)
+		if (parent != null) {
+			this.parent = parent;
 			parent.statements.add (this);
+		}
 		this.no_semicolon = true;
 		this.keyword = keyword;
 		this.expr = expr;
@@ -176,6 +206,7 @@ public class Maja.JSBlock : JSCode {
 	public override void write (JSWriter writer) {
 		if (keyword != null) {
 			writer.write_string (keyword);
+			writer.write_string (" ");
 			if (expr != null) {
 				writer.write_string ("(");
 				expr.write (writer);
@@ -208,22 +239,35 @@ public class Maja.JSText : JSCode {
 }
 
 public class Maja.JSList : JSCode {
-	public Gee.LinkedList<string> parameters_list = new Gee.LinkedList<string>();
+	public Gee.LinkedList<JSCode> elements = new Gee.LinkedList<JSCode>();
+	public bool is_array;
 
-	public JSList add (string name) {
-		parameters_list.add (name);
+	public JSList (bool is_array = false) {
+		this.is_array = is_array;
+	}
+
+	public JSList add (JSCode code) {
+		elements.add (code);
 		return this;
 	}
 
+	public JSList add_string (string name) {
+		return add (new JSText (name));
+	}
+
 	public override void write (JSWriter writer) {
+		if (is_array)
+			writer.write_string ("[");
 		var first = true;
-		foreach (var param in parameters_list) {
+		foreach (var param in elements) {
 			if (!first)
 				writer.write_string (", ");
 			else
 				first = false;
-			writer.write_string (param);
+			param.write (writer);
 		}
+		if (is_array)
+			writer.write_string ("]");
 	}
 }
 
@@ -238,7 +282,7 @@ public class Maja.JSCall : JSCode {
 
 	public override void write (JSWriter writer) {
 		expr.write (writer);
-		writer.write_string ("(");
+		writer.write_string (" (");
 		if (arguments != null)
 			arguments.write (writer);
 		writer.write_string (")");
