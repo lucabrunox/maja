@@ -365,7 +365,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			param_list.add_string ("param_"+param.name);
 			// initialize default
 			// declare local variable for parameter
-			js.stmt (jsvar(param.name).assign (jsnull ()));
+			js.stmt (jsvar(param.name));
 			js.open_if (jsmember("param_"+param.name).inequal (jstext("undefined")));
 			js.stmt (jsmember(param.name).assign (jsmember("param_"+param.name)));
 			js.add_else ();
@@ -399,17 +399,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_local_variable (LocalVariable local) {
-		JSCode rhs = null;
+		var decl = jsvar (local.name);
 		if (local.initializer != null) {
 			local.initializer.emit (this);
-			rhs = get_jsvalue (local.initializer);
-		} else {
-			rhs = jsnull ();
+			decl.assign (get_jsvalue (local.initializer));
 		}
-		js.stmt (jsvar(local.name).assign (rhs));
+		js.stmt (decl);
 	}
 
 	public override void visit_binary_expression (BinaryExpression expr) {
+		expr.left.emit (this);
+		expr.right.emit (this);
 		var jsleft = get_jsvalue (expr.left);
 		var jsright = get_jsvalue (expr.right);
 
