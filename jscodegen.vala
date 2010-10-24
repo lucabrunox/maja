@@ -220,10 +220,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		root_symbol = context.root;
 
-		bool_type = new BooleanType ((Struct) root_symbol.scope.lookup ("bool"));
-		char_type = new IntegerType ((Struct) root_symbol.scope.lookup ("char"));
-		string_type = new ObjectType ((Class) root_symbol.scope.lookup ("string"));
-
 		/* we're only interested in non-pkg source files */
 		var source_files = context.get_source_files ();
 		foreach (SourceFile file in source_files) {
@@ -363,15 +359,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_creation_method (CreationMethod m) {
+		push_context (new EmitContext (m));
+
 		var cl = current_class;
 		if (cl == null || m == cl.default_construction_method)
 			return;
 		generate_construction_method (cl, m);
+
+		pop_context ();
 	}
 
 	public override void visit_formal_parameter (FormalParameter param) {
 		if (param.direction == ParameterDirection.IN) {
-			// never assign a value directly to a parameter in javascript
 			var param_list = (JSList) js.current.expr;
 			param_list.add_string ("param_"+param.name);
 			// initialize default
@@ -405,11 +404,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_block (Block block) {
+		if (current_symbol is Block) {
+			js.open_block ();
+		}
 		emit_context.push_symbol (block);
 		foreach (var stmt in block.get_statements ()) {
 			stmt.emit (this);
 		}
 		emit_context.pop_symbol ();
+		if (current_symbol is Block) {
+			js.end ();
+		}
 	}
 
 	public override void visit_declaration_statement (DeclarationStatement stmt) {
@@ -444,6 +449,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_integer_literal (IntegerLiteral expr) {
 		set_jsvalue (expr, jstext (expr.value + expr.type_suffix));
+	}
+
+	public override void visit_boolean_literal (BooleanLiteral expr) {
+		set_jsvalue (expr, jstext (expr.value ? "true" : "false"));
 	}
 
 	public override void visit_string_literal (StringLiteral expr) {
@@ -538,6 +547,22 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_base_access (BaseAccess expr) {
 		set_jsvalue (expr, jsmember (expr.symbol_reference.get_full_name()).bind());
+	}
+
+	public override void visit_if_statement (IfStatement stmt) {
+		js.open_if (get_jsvalue (stmt.condition));
+		stmt.true_statement.emit (this);
+		if (stmt.false_statement != null) {
+			js.add_else ();
+			stmt.false_statement.emit (this);
+		}
+		js.end ();
+	}
+
+	public override void visit_loop (Loop loop) {
+		js.open_while (jstext("true"));
+		loop.body.emit (this);
+		js.end ();
 	}
 
 	public JSCode? get_jsvalue (Expression expr) {
@@ -658,13 +683,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		} else {
 			rhs = jsnull ();
 		}
-		js.stmt (jsvar(local.name).assign(rhs));
 
+		js.stmt (jsvar(local.name).assign(rhs));
 	}
 
 	public void generate_construction_method (Class cl, CreationMethod m) {
 		push_context (new EmitContext (m));
-
 		var func = jsfunction ();
 		push_function (func);
 		if (!m.chain_up) {

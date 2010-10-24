@@ -91,7 +91,7 @@ public class Maja.JSExpressionBuilder : JSCode {
 	}
 
 	public JSExpressionBuilder equal (JSCode code) {
-		current = new JSOperation (current, " == ", code, true);
+		current = new JSOperation (current, " === ", code, true);
 		return this;
 	}
 
@@ -185,16 +185,11 @@ public class Maja.JSBlockBuilder : JSCode {
 	}
 
 	public void open_if (JSCode condition) {
-		var parent = current;
-		current = new JSBlock (parent, "if", condition);
+		current = new JSBlock (current, "if", condition);
 	}
 
 	public void add_else () {
 		current = new JSBlock (current.parent, "else");
-	}
-
-	public void add_else_if (JSCode condition) {		
-		current = new JSBlock (current.parent, "else if", condition);
 	}
 
 	public void open_while (JSCode condition) {
@@ -203,6 +198,10 @@ public class Maja.JSBlockBuilder : JSCode {
 
 	public void end () {
 		current = current.parent;
+	}
+
+	public void open_block () {
+		current = new JSBlock (current, "function", new JSList (), true);
 	}
 
 	public override void write (JSWriter writer) {
@@ -231,8 +230,9 @@ public class Maja.JSBlock : JSCode {
 	public Gee.LinkedList<JSCode> statements = new Gee.LinkedList<JSCode> ();
 	public string keyword;
 	public JSCode expr;
+	public bool call_function;
 
-	public JSBlock (JSBlock? parent = null, string? keyword = null, JSCode? expr = null) {
+	public JSBlock (JSBlock? parent = null, string? keyword = null, JSCode? expr = null, bool call_function = false) {
 		if (parent != null) {
 			this.parent = parent;
 			parent.statements.add (this);
@@ -240,6 +240,7 @@ public class Maja.JSBlock : JSCode {
 		this.no_semicolon = true;
 		this.keyword = keyword;
 		this.expr = expr;
+		this.call_function = call_function;
 	}
 
 	public override void write (JSWriter writer) {
@@ -262,6 +263,8 @@ public class Maja.JSBlock : JSCode {
 		}
 		if (keyword != null)
 			writer.write_end_block ();
+		if (call_function)
+			writer.write_string ("();");
 	}
 }
 
