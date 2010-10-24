@@ -525,7 +525,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_expression_statement (ExpressionStatement stmt) {
 		var jscode = get_jsvalue (stmt.expression);
-		if (!(jscode == null && stmt.expression is MethodCall))
+		if (jscode != null)
 			js.stmt (jscode);
 	}
 
@@ -574,6 +574,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		js.open_while (jstext("true"));
 		loop.body.emit (this);
 		js.end ();
+	}
+
+	public override void visit_postfix_expression (PostfixExpression expr) {
+		var temp = get_temp_variable_name ();
+		js.stmt (jsvar(temp).assign (get_jsvalue (expr.inner)));
+		if (expr.increment)
+			js.stmt (jsmember(temp).increment ());
+		else
+			js.stmt (jsmember(temp).decrement ());
+		if (!(expr.parent_node is ExpressionStatement))
+			set_jsvalue (expr, jsmember (temp));
 	}
 
 	public JSCode? get_jsvalue (Expression expr) {
@@ -672,30 +683,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public string get_temp_variable_name () {
 		return "_tmp%d_".printf (next_temp_var_id++);
-	}
-
-	public LocalVariable get_temp_variable (DataType type, CodeNode? node_reference = null, bool init = true) {
-		var var_type = type.copy ();
-		var_type.value_owned = true;
-		var local = new LocalVariable (var_type, get_temp_variable_name ());
-		local.no_init = !init;
-
-		if (node_reference != null) {
-			local.source_reference = node_reference.source_reference;
-		}
-
-		return local;
-	}
-
-	public void emit_temp_var (LocalVariable local) {
-		JSCode rhs = null;
-		if (local.initializer != null) {
-			rhs = get_jsvalue (local.initializer);
-		} else {
-			rhs = jsnull ();
-		}
-
-		js.stmt (jsvar(local.name).assign(rhs));
 	}
 
 	public string get_variable_jsname (string name) {

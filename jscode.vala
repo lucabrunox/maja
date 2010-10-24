@@ -105,6 +105,16 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder increment () {
+		current = new JSOperation (current, "++", null, false, true);
+		return this;
+	}
+
+	public JSExpressionBuilder decrement () {
+		current = new JSOperation (current, "--", null, false, true);
+		return this;
+	}
+
 	public override void write (JSWriter writer) {
 		current.write (writer);
 	}
@@ -121,24 +131,29 @@ public class Maja.JSOperation : JSCode {
 	public JSCode right;
 	public string operation;
 	public bool needs_parens;
+	public bool is_postfix;
 
-	public JSOperation (JSCode left, string operation, JSCode? right = null, bool needs_parens = false) {
+	public JSOperation (JSCode left, string operation, JSCode? right = null, bool needs_parens = false, bool is_postfix = false) {
 		this.left = left;
 		this.operation = operation;
 		this.right = right;
 		this.needs_parens = needs_parens;
+		this.is_postfix = is_postfix;
 	}
 
 	public override void write (JSWriter writer) {
 		var left_parens = left is JSOperation && ((JSOperation)left).needs_parens;
 		var right_parens = right is JSOperation && ((JSOperation)left).needs_parens;
 		if (right == null) {
-			writer.write_string (operation);
+			if (!is_postfix)
+				writer.write_string (operation);
 			if (left_parens)
 				writer.write_string ("(");
 			left.write (writer);
 			if (right_parens)
 				writer.write_string (")");
+			if (is_postfix)
+				writer.write_string (operation);
 		} else {
 			if (left_parens)
 				writer.write_string ("(");
