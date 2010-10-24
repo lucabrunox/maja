@@ -100,6 +100,11 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder negate () {
+		current = new JSOperation (current, "!");
+		return this;
+	}
+
 	public override void write (JSWriter writer) {
 		current.write (writer);
 	}

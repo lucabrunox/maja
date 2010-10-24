@@ -187,7 +187,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	/* (constant) hash table with all reserved identifiers in the generated code */
 	Set<string> reserved_identifiers;
-	
+
+	public Gee.Map<string,string> variable_name_map {
+		get { return emit_context.variable_name_map; }
+	}
+
 	public int next_temp_var_id {
 		get { return emit_context.next_temp_var_id; }
 		set { emit_context.next_temp_var_id = value; }
@@ -443,8 +447,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_unary_expression (UnaryExpression expr) {
-		if (expr.operator == UnaryOperator.OUT || expr.operator == UnaryOperator.REF)
+		switch (expr.operator) {
+		case UnaryOperator.OUT:
+		case UnaryOperator.REF:
 			set_jsvalue (expr, get_jsvalue (expr.inner));
+			break;
+		case UnaryOperator.LOGICAL_NEGATION:
+			set_jsvalue (expr, jsexpr (get_jsvalue (expr.inner)).negate ());
+			break;
+		}
 	}
 
 	public override void visit_integer_literal (IntegerLiteral expr) {
@@ -482,8 +493,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		if (result != null) {
-			js.stmt (jsvar ("_maja_result").assign (result));
-			js.stmt (jsmember ("_maja_result").keyword ("return"));
+			js.stmt (jsvar ("result").assign (result));
+			js.stmt (jsmember ("result").keyword ("return"));
 		}
 	}
 
@@ -590,7 +601,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public JSExpressionBuilder jsmember (string name) {
-		return jstext (name);
+		return jstext (get_variable_jsname (name));
 	}
 
 	public JSExpressionBuilder jsnull () {
@@ -685,6 +696,23 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		js.stmt (jsvar(local.name).assign(rhs));
+	}
+
+	public string get_variable_jsname (string name) {
+		if (name[0] == '.') {
+			if (name == ".result") {
+				return "result";
+			}
+			// compiler-internal variable
+			if (!variable_name_map.contains (name)) {
+				variable_name_map.set (name, get_temp_variable_name ());
+			}
+			return variable_name_map.get (name);
+		} else if (reserved_identifiers.contains (name)) {
+			return "_%s_".printf (name);
+		} else {
+			return name;
+		}
 	}
 
 	public void generate_construction_method (Class cl, CreationMethod m) {
