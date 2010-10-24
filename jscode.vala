@@ -40,15 +40,23 @@ public class Maja.JSExpressionBuilder : JSCode {
 	}
 
 	public JSExpressionBuilder member (string name) {
-		access (new JSText (name));
-		return this;
+		return member_code (new JSText (name));
 	}
 
-	public JSExpressionBuilder access (JSCode member) {
+	public JSExpressionBuilder member_code (JSCode member) {
 		if (current == null)
 			current = member;
 		else
 			current = new JSOperation (current, ".", member);
+		return this;
+	}
+
+	public JSExpressionBuilder element (int n) {
+		return element_code (new JSText (n.to_string ()));
+	}
+
+	public JSExpressionBuilder element_code (JSCode element) {
+		current = new JSElementAccess (current, element);
 		return this;
 	}
 
@@ -139,6 +147,23 @@ public class Maja.JSOperation : JSCode {
 			if (right_parens)
 				writer.write_string (")");
 		}
+	}
+}
+
+public class Maja.JSElementAccess : JSCode {
+	public JSCode container;
+	public JSCode element;
+
+	public JSElementAccess (JSCode container, JSCode element) {
+		this.container = container;
+		this.element = element;
+	}
+
+	public override void write (JSWriter writer) {
+		container.write (writer);
+		writer.write_string ("[");
+		element.write (writer);
+		writer.write_string ("]");
 	}
 }
 

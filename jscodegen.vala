@@ -437,6 +437,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		set_jsvalue (expr, jscode);
 	}
 
+	public override void visit_unary_expression (UnaryExpression expr) {
+		if (expr.operator == UnaryOperator.OUT || expr.operator == UnaryOperator.REF)
+			set_jsvalue (expr, get_jsvalue (expr.inner));
+	}
+
 	public override void visit_integer_literal (IntegerLiteral expr) {
 		set_jsvalue (expr, jstext (expr.value + expr.type_suffix));
 	}
@@ -450,7 +455,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		JSExpressionBuilder result = null;
 		if (stmt.return_expression != null) {
 			stmt.return_expression.emit (this);
-			result = get_jsvalue (stmt.return_expression);
+			result = jsexpr (get_jsvalue (stmt.return_expression));
 		}
 
 		bool has_out_parameters = false;
@@ -477,7 +482,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		JSCode jscode = jsmember (ma.member_name);
 		var expr = ma.inner as MemberAccess;
 		while (expr != null) {
-			jscode = jsmember (expr.member_name).access (jscode);
+			jscode = jsmember (expr.member_name).member_code (jscode);
 			expr = expr.inner as MemberAccess;
 		}
 		set_jsvalue (ma, jscode);
@@ -499,7 +504,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_expression_statement (ExpressionStatement stmt) {
-		js.stmt (get_jsvalue (stmt.expression));
+		var jscode = get_jsvalue (stmt.expression);
+		if (!(jscode == null && stmt.expression is MethodCall))
+			js.stmt (jscode);
 	}
 
 	public override void visit_object_creation_expression (ObjectCreationExpression expr) {
@@ -509,30 +516,36 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jscode = jsmember (cl.get_full_name ());
 		if (expr.symbol_reference != cl.default_construction_method)
 			jscode.member (expr.symbol_reference.name);
-		jscode.call_new (generate_jslist (expr.get_argument_list ()));
-		set_jsvalue (expr, jscode);
+		set_jsvalue (expr, emit_method_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), expr));
 	}
 
 	public override void visit_assignment (Assignment expr) {
 		expr.left.emit (this);
 		expr.right.emit (this);
-		set_jsvalue (expr, get_jsvalue (expr.left).assign (get_jsvalue (expr.right)));
+		set_jsvalue (expr, jsexpr(get_jsvalue (expr.left)).assign (get_jsvalue (expr.right)));
 	}
 
 	public override void visit_method_call (MethodCall expr) {
-		set_jsvalue (expr, get_jsvalue (expr.call).call (generate_jslist (expr.get_argument_list ())));
+		Method m;
+		if (expr.call.symbol_reference is Class)
+			m = ((Class) expr.call.symbol_reference).default_construction_method;
+		else
+			m = (Method) expr.call.symbol_reference;
+		var jscode = emit_method_call (m, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), expr);
+		if (!(expr.parent_node is ExpressionStatement))
+			set_jsvalue (expr, jscode);
 	}
 
 	public override void visit_base_access (BaseAccess expr) {
 		set_jsvalue (expr, jsmember (expr.symbol_reference.get_full_name()).bind());
 	}
 
-	public JSExpressionBuilder? get_jsvalue (Expression expr) {
+	public JSCode? get_jsvalue (Expression expr) {
 		if (expr.target_value == null) {
 			return null;
 		}
 		var js_value = (JSValue) expr.target_value;
-		return jsexpr(js_value.jscode);
+		return js_value.jscode;
 	}
 
 	public void set_jsvalue (Expression expr, JSCode code) {
@@ -573,25 +586,67 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSList generate_jslist (Vala.List<Expression> expressions) {
-		var list = new JSList ();
-		foreach (var arg in expressions) {
-			list.add (get_jsvalue (arg));
+	public JSCode? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, CodeNode? node_reference = null) {
+		var has_result = !(m.return_type is VoidType) || m is CreationMethod;
+
+		var has_out_parameters = false;
+		Expression[] out_results = null;
+		var jsargs = new JSList ();
+
+		var arg_it = arguments.iterator ();
+		foreach (var param in m.get_parameters ()) {
+			if (param.direction != ParameterDirection.IN) {
+				if (!has_out_parameters) {
+					out_results = new Expression[]{};
+					has_out_parameters = true;
+				}
+				if (arg_it.next ()) {
+					out_results += arg_it.get ();
+				}
+			} else {
+				if (arg_it.next ()) {
+					jsargs.add (get_jsvalue (arg_it.get ()));
+				}
+			}
 		}
-		return list;
+
+		if (m is CreationMethod) {
+			jscall.call_new (jsargs);
+		} else {
+			jscall.call (jsargs);
+		}
+
+		JSCode jscode = null;
+		if (has_out_parameters) {
+			var result_tmp = get_temp_variable_name ();
+			js.stmt (jsvar (result_tmp).assign (jscall));
+			var out_results_index = 0;
+			if (has_result) {
+				jscode = jsmember (result_tmp).element (0);
+				out_results_index++;
+			}
+			foreach (var out_result in out_results) {
+				js.stmt (jsexpr (get_jsvalue (out_result)).assign (jsmember (result_tmp).element (out_results_index++)));
+			}
+		} else if (has_result) {
+			jscode = jscall;
+		}
+		return jscode;
 	}
 
-	public LocalVariable get_temp_variable (DataType type, bool value_owned = true, CodeNode? node_reference = null, bool init = true) {
+	public string get_temp_variable_name () {
+		return "_tmp%d_".printf (next_temp_var_id++);
+	}
+
+	public LocalVariable get_temp_variable (DataType type, CodeNode? node_reference = null, bool init = true) {
 		var var_type = type.copy ();
-		var_type.value_owned = value_owned;
-		var local = new LocalVariable (var_type, "_tmp%d_".printf (next_temp_var_id));
+		var_type.value_owned = true;
+		var local = new LocalVariable (var_type, get_temp_variable_name ());
 		local.no_init = !init;
 
 		if (node_reference != null) {
 			local.source_reference = node_reference.source_reference;
 		}
-
-		next_temp_var_id++;
 
 		return local;
 	}
