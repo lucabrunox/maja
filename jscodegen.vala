@@ -319,7 +319,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var init_func = jsfunction ();
 		push_function (init_func);
 		if (cl.base_class != null) {
-			js.stmt (jsmember(cl.base_class.get_full_name()).member("prototype._maja_init").bind().call());
+			js.stmt (jsmember(cl.base_class.get_full_name()).member("prototype._maja_init").member("call").call(jsmember("this")));
 		}
 		pop_context ();
 
@@ -539,7 +539,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_base_access (BaseAccess expr) {
-		set_jsvalue (expr, jsmember (expr.symbol_reference.get_full_name()).bind());
+		set_jsvalue (expr, jsbind (jsmember (expr.symbol_reference.get_full_name())));
 	}
 
 	public override void visit_if_statement (IfStatement stmt) {
@@ -571,7 +571,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_lambda_expression (LambdaExpression expr) {
-		set_jsvalue (expr, generate_method (expr.method));
+		set_jsvalue (expr, jsbind (generate_method (expr.method)));
 	}
 
 	public JSCode generate_method (Method m) {
@@ -646,6 +646,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public JSList jslist () {
 		return new JSList ();
+	}
+
+	public JSExpressionBuilder jsbind (JSCode expr) {
+		return jsmaja().member("bind").call (jslist().add (jsmember ("this")).add (expr));
 	}
 
 	public JSExpressionBuilder jsstring (string value) {
