@@ -310,7 +310,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		// constructor defines the class too
 		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
 		if (cl.base_class != null) {
-			jsdecl.stmt (jsmember(cl.name).member("prototype").assign (jsmember(cl.base_class.get_full_name()).keyword("new")));
+			jsdecl.stmt (jsmaja().member("mixin").call (jslist().add (jsmember(cl.get_full_name()).member("prototype")).add (jsmember(cl.base_class.get_full_name()).member("prototype"))));
 		}
 
 		// init function
@@ -408,17 +408,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_block (Block block) {
-		if (current_symbol is Block) {
+		/*		if (current_symbol is Block) {
 			js.open_block ();
-		}
+			}*/
 		emit_context.push_symbol (block);
 		foreach (var stmt in block.get_statements ()) {
 			stmt.emit (this);
 		}
 		emit_context.pop_symbol ();
-		if (current_symbol is Block) {
+		/*if (current_symbol is Block) {
 			js.end ();
-		}
+			}*/
 	}
 
 	public override void visit_declaration_statement (DeclarationStatement stmt) {
@@ -426,7 +426,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_local_variable (LocalVariable local) {
-		var decl = jsvar (local.name);
+		var decl = jsvar (get_variable_jsname (local.name));
 		if (local.initializer != null) {
 			local.initializer.emit (this);
 			decl.assign (get_jsvalue (local.initializer));
@@ -499,10 +499,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_member_access (MemberAccess ma) {
-		JSCode jscode = jsmember (ma.member_name);
+		JSCode jscode = jsmember (get_variable_jsname (ma.member_name));
 		var expr = ma.inner as MemberAccess;
 		while (expr != null) {
-			jscode = jsmember (expr.member_name).member_code (jscode);
+			jscode = jsmember (get_variable_jsname (expr.member_name)).member_code (jscode);
 			expr = expr.inner as MemberAccess;
 		}
 		set_jsvalue (ma, jscode);
@@ -577,12 +577,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_postfix_expression (PostfixExpression expr) {
+		var orig = get_jsvalue (expr.inner);
 		var temp = get_temp_variable_name ();
-		js.stmt (jsvar(temp).assign (get_jsvalue (expr.inner)));
+		js.stmt (jsvar(temp).assign (orig));
 		if (expr.increment)
-			js.stmt (jsmember(temp).increment ());
+			js.stmt (jsexpr(orig).increment ());
 		else
-			js.stmt (jsmember(temp).decrement ());
+			js.stmt (jsexpr(orig).decrement ());
 		if (!(expr.parent_node is ExpressionStatement))
 			set_jsvalue (expr, jsmember (temp));
 	}
@@ -612,11 +613,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public JSExpressionBuilder jsmember (string name) {
-		return jstext (get_variable_jsname (name));
+		return jstext (name);
 	}
 
 	public JSExpressionBuilder jsnull () {
 		return jstext ("null");
+	}
+
+	public JSExpressionBuilder jsmaja () {
+		return jstext ("Maja");
 	}
 
 	public JSExpressionBuilder jsundefined () {
@@ -629,6 +634,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return result;
 	}
 
+	public JSList jslist () {
+		return new JSList ();
+	}
+
 	public JSExpressionBuilder jsstring (string value) {
 		return jstext ("\"%s\"".printf (value));
 	}
@@ -638,7 +647,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		var has_out_parameters = false;
 		Expression[] out_results = null;
-		var jsargs = new JSList ();
+		var jsargs = jslist ();
 
 		var arg_it = arguments.iterator ();
 		foreach (var param in m.get_parameters ()) {
