@@ -330,25 +330,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method (Method m) {
-		push_context (new EmitContext (m));
-
-		if (m.body != null) {
-			bool return_found = false;
-			// add default return if there's none
-			foreach (var stmt in m.body.get_statements ()) {
-				if (stmt is ReturnStatement) {
-					return_found = true;
-					break;
-				}
-			}
-			if (!return_found)
-				m.body.add_statement (new ReturnStatement ());
-		}
-
-		var func = jsfunction ();
-		push_function (func);
-		m.accept_children (this);
-		pop_context ();
+		var func = generate_method (m);
 
 		// declare function
 		var def = jsexpr ();
@@ -586,6 +568,34 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			js.stmt (jsexpr(orig).decrement ());
 		if (!(expr.parent_node is ExpressionStatement))
 			set_jsvalue (expr, jsmember (temp));
+	}
+
+	public override void visit_lambda_expression (LambdaExpression expr) {
+		set_jsvalue (expr, generate_method (expr.method));
+	}
+
+	public JSCode generate_method (Method m) {
+		push_context (new EmitContext (m));
+
+		if (m.body != null) {
+			bool return_found = false;
+			// add default return if there's none
+			foreach (var stmt in m.body.get_statements ()) {
+				if (stmt is ReturnStatement) {
+					return_found = true;
+					break;
+				}
+			}
+			if (!return_found)
+				m.body.add_statement (new ReturnStatement ());
+		}
+
+		var func = jsfunction ();
+		push_function (func);
+		m.accept_children (this);
+		pop_context ();
+
+		return func;
 	}
 
 	public JSCode? get_jsvalue (Expression expr) {
