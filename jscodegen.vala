@@ -216,7 +216,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		// reserved for Maja naming conventions
 		reserved_identifiers.add ("error");
-		reserved_identifiers.add ("result");
 	}
 
 	public override void emit (CodeContext context) {
@@ -479,6 +478,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 	}
 
+	public override void visit_null_literal (NullLiteral expr) {
+		set_jsvalue (expr, jsnull ());
+	}
+
 	public override void visit_integer_literal (IntegerLiteral expr) {
 		set_jsvalue (expr, jstext (expr.value + expr.type_suffix));
 	}
@@ -494,9 +497,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public override void visit_return_statement (ReturnStatement stmt) {
 		var m = current_method;
 		JSExpressionBuilder result = null;
-		if (stmt.return_expression != null) {
-			stmt.return_expression.emit (this);
-			result = jsexpr (get_jsvalue (stmt.return_expression));
+		if (!(current_return_type is VoidType)) {
+			result = jsmember("result");
 		}
 
 		bool has_out_parameters = false;
@@ -514,7 +516,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		if (result != null) {
-			js.stmt (jsvar ("result").assign (result));
+			if (current_return_type is VoidType) {
+				js.stmt (jsvar ("result").assign (result));
+			} else {
+				js.stmt (jsmember ("result").assign (result));
+			}
 			js.stmt (jsmember ("result").keyword ("return"));
 		}
 	}
@@ -647,6 +653,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_throw_statement (ThrowStatement stmt) {
 		js.stmt (jsexpr (get_jsvalue (stmt.error_expression)).keyword ("throw"));
+	}
+
+	public override void visit_property (Property prop) {
 	}
 
 	public JSCode generate_method (Method m) {
@@ -789,9 +798,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public string get_variable_jsname (string name) {
 		if (name[0] == '.') {
-			if (name == ".result") {
-				return "result";
-			}
 			// compiler-internal variable
 			if (!variable_name_map.contains (name)) {
 				variable_name_map.set (name, get_temp_variable_name ());
