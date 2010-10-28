@@ -1,9 +1,12 @@
-public abstract class any {
+public extern abstract class any {
 	// allow nullable this
 	public abstract bool equals (any? other);
 
 	// allow nullable this
 	public abstract string to_string ();
+}
+
+public abstract class Dova.Type {
 }
 
 public class Dova.Object : any {
@@ -79,6 +82,14 @@ public struct int64 {
 
 [IntegerType (rank = 9, width = 64, signed = false)]
 public struct uint64 {
+}
+
+[FloatingType (rank = 1)]
+public struct float {
+}
+
+[FloatingType (rank = 2, width = 64)]
+public struct double {
 }
 
 public class Dova.Value : any {
@@ -195,7 +206,7 @@ public class string : Dova.Value {
 
 	// to_lower is hardcoded as toLowerCase
 
-	// to_uppwer is hardcoded as toUpperCase
+	// to_upper is hardcoded as toUpperCase
 
 	// replace() is 
 	public string replace (string old, string replacement) {
@@ -206,6 +217,11 @@ public class string : Dova.Value {
 }
 
 public class Dova.List<T> : Object {
+	public extern int length { get; private set; }
+	public extern T get (int index);
+}
+
+public class Dova.Tuple<T> : Object {
 	public extern int length { get; private set; }
 	public extern T get (int index);
 }
