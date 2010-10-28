@@ -333,6 +333,30 @@ public class Maja.JSList : JSCode {
 	}
 }
 
+public class Maja.JSObject : JSCode {
+	public Gee.HashMap<JSCode,JSCode> elements = new Gee.HashMap<JSCode,JSCode>();
+
+	public JSObject add (JSCode key, JSCode value) {
+		elements[key] = value;
+		return this;
+	}
+
+	public override void write (JSWriter writer) {
+		writer.write_string ("{");
+		var first = true;
+		foreach (var entry in elements.entries) {
+			if (!first)
+				writer.write_string (", ");
+			else
+				first = false;
+			entry.key.write (writer);
+			writer.write_string (": ");
+			entry.value.write (writer);
+		}
+		writer.write_string ("}");
+	}
+}
+
 public class Maja.JSCall : JSCode {
 	public JSCode expr;
 	public JSCode arguments;

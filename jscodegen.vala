@@ -574,11 +574,29 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		set_jsvalue (expr, jsbind (generate_method (expr.method)));
 	}
 
-	public override void visit_list_literal (ListLiteral list) {
+	public override void visit_list_literal (ListLiteral expr) {
 		var jslist = jslist (true);
-		foreach (var expr in list.get_expressions ())
-			jslist.add (get_jsvalue (expr));
-		set_jsvalue (list, jslist);
+		foreach (var element in expr.get_expressions ())
+			jslist.add (get_jsvalue (element));
+		set_jsvalue (expr, jslist);
+	}
+
+	public override void visit_set_literal (SetLiteral expr) {
+		var jsobj = jsobject ();
+		foreach (var element in expr.get_expressions ())
+			jsobj.add (get_jsvalue (element), jstext("true"));
+		set_jsvalue (expr, jsobj);
+	}
+
+	public override void visit_map_literal (MapLiteral expr) {
+		var jsobj = jsobject ();
+		var key_it = expr.get_keys ().iterator ();
+		var value_it = expr.get_values ().iterator ();
+		while (key_it.next ()) {
+			assert (value_it.next ());
+			jsobj.add (get_jsvalue (key_it.get ()), get_jsvalue (value_it.get ()));
+		}
+		set_jsvalue (expr, jsobj);
 	}
 
 	public JSCode generate_method (Method m) {
@@ -653,6 +671,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public JSList jslist (bool is_array = false) {
 		return new JSList (is_array);
+	}
+
+	public JSObject jsobject () {
+		return new JSObject ();
 	}
 
 	public JSExpressionBuilder jsbind (JSCode expr) {
