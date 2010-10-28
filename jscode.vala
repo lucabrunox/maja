@@ -100,6 +100,44 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder minus (JSCode? code = null) {
+		if (code == null)
+			current = new JSOperation (current, "-");
+		else
+			current = new JSOperation (current, " - ", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder lt (JSCode code) {
+		current = new JSOperation (current, " < ", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder gt (JSCode code) {
+		current = new JSOperation (current, " > ", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder le (JSCode code) {
+		current = new JSOperation (current, " <= ", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder ge (JSCode code) {
+		current = new JSOperation (current, " >= ", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder and (JSCode code) {
+		current = new JSOperation (current, " && ", code, true);
+		return this;
+	}
+
+	public JSExpressionBuilder or (JSCode code) {
+		current = new JSOperation (current, " || ", code, true);
+		return this;
+	}
+
 	public JSExpressionBuilder negate () {
 		current = new JSOperation (current, "!");
 		return this;
@@ -216,7 +254,7 @@ public class Maja.JSBlockBuilder : JSCode {
 		current = new JSBlock (current, "while", condition);
 	}
 
-	public void end () {
+	public void close () {
 		current = current.parent;
 	}
 

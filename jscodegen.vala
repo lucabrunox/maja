@@ -366,7 +366,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			if (!param.variable_type.nullable) {
 				js.open_if (jsmember("param_"+param.name).equal (jsnull ()));
 				js.error (jsstring ("Unexpected null parameter '"+param.name+"'"));
-				js.end ();
+				js.close ();
 			}
 			js.stmt (jsmember(param.name).assign (jsmember("param_"+param.name)));
 			js.add_else ();
@@ -376,7 +376,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			} else {
 				js.error (jsstring ("Undefined parameter '"+param.name+"'"));
 			}
-			js.end ();
+			js.close ();
 		} else {
 			JSCode rhs = null;
 			if (param.initializer != null) {
@@ -399,7 +399,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 		emit_context.pop_symbol ();
 		/*if (current_symbol is Block) {
-			js.end ();
+			js.close ();
 			}*/
 	}
 
@@ -422,9 +422,42 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jsleft = get_jsvalue (expr.left);
 		var jsright = get_jsvalue (expr.right);
 
-		JSCode jscode = null;
-		if (expr.operator == BinaryOperator.PLUS)
-			jscode = jsexpr(jsleft).plus (jsright);
+		var jscode = jsexpr (jsleft);
+		switch (expr.operator) {
+		case BinaryOperator.PLUS:
+			jscode.plus (jsright); 
+			break;
+		case BinaryOperator.MINUS:
+			jscode.minus (jsright);
+			break;
+		case BinaryOperator.LESS_THAN:
+			jscode.lt (jsright);
+			break;
+		case BinaryOperator.GREATER_THAN:
+			jscode.gt (jsright);
+			break;
+		case BinaryOperator.LESS_THAN_OR_EQUAL:
+			jscode.le (jsright);
+			break;
+		case BinaryOperator.GREATER_THAN_OR_EQUAL:
+			jscode.ge (jsright);
+			break;
+		case BinaryOperator.EQUALITY:
+			jscode.equal (jsright);
+			break;
+		case BinaryOperator.INEQUALITY:
+			jscode.inequal (jsright);
+			break;
+		case BinaryOperator.AND:
+			jscode.and (jsright);
+			break;
+		case BinaryOperator.OR:
+			jscode.or (jsright);
+			break;
+		default:
+			assert_not_reached ();
+		}
+
 		set_jsvalue (expr, jscode);
 	}
 
@@ -432,11 +465,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		switch (expr.operator) {
 		case UnaryOperator.OUT:
 		case UnaryOperator.REF:
+		case UnaryOperator.PLUS:
 			set_jsvalue (expr, get_jsvalue (expr.inner));
 			break;
 		case UnaryOperator.LOGICAL_NEGATION:
 			set_jsvalue (expr, jsexpr (get_jsvalue (expr.inner)).negate ());
 			break;
+		case UnaryOperator.MINUS:
+			set_jsvalue (expr, jsexpr (get_jsvalue (expr.inner)).minus ());
+			break;
+		default:
+			assert_not_reached ();
 		}
 	}
 
@@ -528,6 +567,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
+		if (expr.is_assert) {
+			var arguments = expr.get_argument_list ();
+			js.open_if (get_jsvalue (arguments[0]));
+			js.error (get_jsvalue (arguments[1]));
+			js.close ();
+		}
+
 		Method m;
 		if (expr.call.symbol_reference is Class)
 			m = ((Class) expr.call.symbol_reference).default_construction_method;
@@ -549,13 +595,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			js.add_else ();
 			stmt.false_statement.emit (this);
 		}
-		js.end ();
+		js.close ();
 	}
 
 	public override void visit_loop (Loop loop) {
 		js.open_while (jstext("true"));
 		loop.body.emit (this);
-		js.end ();
+		js.close ();
 	}
 
 	public override void visit_postfix_expression (PostfixExpression expr) {
@@ -597,6 +643,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			jsobj.add (get_jsvalue (key_it.get ()), get_jsvalue (value_it.get ()));
 		}
 		set_jsvalue (expr, jsobj);
+	}
+
+	public override void visit_throw_statement (ThrowStatement stmt) {
+		js.stmt (jsexpr (get_jsvalue (stmt.error_expression)).keyword ("throw"));
 	}
 
 	public JSCode generate_method (Method m) {
