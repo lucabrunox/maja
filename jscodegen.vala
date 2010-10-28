@@ -329,6 +329,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method (Method m) {
+		if (m.external)
+			return;
+
 		var func = generate_method (m);
 
 		// declare function
@@ -518,7 +521,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (result != null) {
 			if (current_return_type is VoidType) {
 				js.stmt (jsvar ("result").assign (result));
-			} else {
+			} else if (has_out_parameters) {
 				js.stmt (jsmember ("result").assign (result));
 			}
 			js.stmt (jsmember ("result").keyword ("return"));
@@ -527,10 +530,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_member_access (MemberAccess ma) {
 		JSCode jscode = jsmember (get_variable_jsname (ma.member_name));
-		var expr = ma.inner as MemberAccess;
+		var expr = ma.inner;
 		while (expr != null) {
-			jscode = jsmember (get_variable_jsname (expr.member_name)).member_code (jscode);
-			expr = expr.inner as MemberAccess;
+			if (expr is MemberAccess) {
+				var name = ((MemberAccess) expr).member_name;
+				if (name != "this")
+					name = get_variable_jsname (name);
+				jscode = jsmember (name).member_code (jscode);
+				expr = ((MemberAccess) expr).inner;
+			} else {
+				jscode = jsexpr (get_jsvalue (expr)).member_code (jscode);
+				break;
+			}
 		}
 		set_jsvalue (ma, jscode);
 	}
@@ -573,13 +584,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
-		if (expr.is_assert) {
-			var arguments = expr.get_argument_list ();
-			js.open_if (get_jsvalue (arguments[0]));
-			js.error (get_jsvalue (arguments[1]));
-			js.close ();
-		}
-
 		Method m;
 		if (expr.call.symbol_reference is Class)
 			m = ((Class) expr.call.symbol_reference).default_construction_method;
@@ -676,7 +680,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		var func = jsfunction ();
 		push_function (func);
-		m.accept_children (this);
+		if (m.is_abstract) {
+			js.error (jsstring ("Abstract method '%s' not implemented".printf (m.get_full_name())));
+		} else {
+			m.accept_children (this);
+		}
 		pop_context ();
 
 		return func;
