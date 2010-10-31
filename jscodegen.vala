@@ -681,6 +681,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		set_jsvalue (expr, jsdova().member("array").call (jssizes));
 	}
 
+	public override void visit_element_access (ElementAccess expr) {
+		var jsindices = jslist ();
+		foreach (var index in expr.get_indices ()) {
+			jsindices.add (get_jsvalue (index));
+		}
+		set_jsvalue (expr, jsexpr (get_jsvalue (expr.container)).element_code (jsindices));
+	}
+
 	public JSCode generate_method (Method m) {
 		push_context (new EmitContext (m));
 
