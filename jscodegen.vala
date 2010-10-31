@@ -59,7 +59,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public JSBlockBuilder jsdecl;
 
 	public EmitContext emit_context = new EmitContext ();
-	public EmitContext init_emit_context = new EmitContext ();
 
 	Gee.List<EmitContext> emit_context_stack = new Gee.ArrayList<EmitContext> ();
 
@@ -313,8 +312,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		// init function
-		init_emit_context = new EmitContext (cl);
-		push_context (init_emit_context);
+		base_init_context = new EmitContext (cl);
+		push_context (base_init_context);
 		var init_func = jsfunction ();
 		push_function (init_func);
 		if (cl.base_class != null) {
@@ -548,7 +547,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_field (Field field) {
 		if (field.binding == MemberBinding.INSTANCE) {
-			push_context (init_emit_context);
+			push_context (base_init_context);
 			JSCode rhs = null;
 			if (field.initializer != null) {
 				field.initializer.emit (this);
@@ -659,7 +658,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		js.stmt (jsexpr (get_jsvalue (stmt.error_expression)).keyword ("throw"));
 	}
 
-	public override void visit_property (Property prop) {
+	public override void visit_try_statement (TryStatement stmt) {
+		js.open_try ();
+		stmt.body.emit (this);
+		foreach (var clause in stmt.get_catch_clauses ()) {
+			js.open_catch (clause.variable_name);
+			clause.body.emit (this);
+		}
+		if (stmt.finally_body != null) {
+			js.open_finally ();
+			stmt.finally_body.emit (this);
+		}
+		js.close ();
 	}
 
 	public JSCode generate_method (Method m) {

@@ -250,6 +250,18 @@ public class Maja.JSBlockBuilder : JSCode {
 		current = new JSBlock (current.parent, "else");
 	}
 
+	public void open_try () {
+		current = new JSBlock (current, "try");
+	}
+
+	public void open_catch (string variable_name) {
+		current = new JSBlock (current.parent, "catch", new JSText (variable_name));
+	}
+
+	public void open_finally () {
+		current = new JSBlock (current.parent, "finally");
+	}
+
 	public void open_while (JSCode condition) {
 		current = new JSBlock (current, "while", condition);
 	}
