@@ -771,25 +771,26 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSCode? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_parameters = false, CodeNode? node_reference = null) {
+	public JSCode? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results = false, CodeNode? node_reference = null) {
 		var has_result = !(m.return_type is VoidType) || m is CreationMethod;
 		Expression[] out_results = null;
 		var jsargs = jslist ();
 
 		var arg_it = arguments.iterator ();
 		foreach (var param in m.get_parameters ()) {
+			if (!arg_it.next ())
+				break;
 			if (param.direction != ParameterDirection.IN) {
-				if (!has_out_parameters) {
+				var out_result = arg_it.get ();
+				if (!has_out_results) {
+					if (out_result.value_type is NullType)
+						continue;
 					out_results = new Expression[]{};
-					has_out_parameters = true;
+					has_out_results = true;
 				}
-				if (arg_it.next ()) {
-					out_results += arg_it.get ();
-				}
+				out_results += arg_it.get ();
 			} else {
-				if (arg_it.next ()) {
-					jsargs.add (get_jsvalue (arg_it.get ()));
-				}
+				jsargs.add (get_jsvalue (arg_it.get ()));
 			}
 		}
 
@@ -799,7 +800,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			jscall.call (jsargs);
 		}
 		JSCode jscode = null;
-		if (has_out_parameters) {
+		if (has_out_results) {
 			var result_tmp = get_temp_variable_name ();
 			js.stmt (jsvar (result_tmp).assign (jscall));
 			var out_results_index = 0;
@@ -808,7 +809,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				out_results_index++;
 			}
 			foreach (var out_result in out_results) {
-				js.stmt (jsexpr (get_jsvalue (out_result)).assign (jsmember (result_tmp).element (out_results_index++)));
+				if (!(out_result.value_type is NullType)) {
+					js.stmt (jsexpr (get_jsvalue (out_result)).assign (jsmember (result_tmp).element (out_results_index++)));
+				}
 			}
 		} else {
 			jscode = jscall;
