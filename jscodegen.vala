@@ -573,7 +573,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jscode = jsmember (cl.get_full_name ());
 		if (expr.symbol_reference != cl.default_construction_method)
 			jscode.member (expr.symbol_reference.name);
-		set_jsvalue (expr, emit_method_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), expr));
+		set_jsvalue (expr, emit_method_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), null, expr));
 	}
 
 	public override void visit_assignment (Assignment expr) {
@@ -588,8 +588,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			m = ((Class) expr.call.symbol_reference).default_construction_method;
 		else
 			m = (Method) expr.call.symbol_reference;
-		var jscode = emit_method_call (m, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), expr);
-		if (!(expr.parent_node is ExpressionStatement))
+		bool has_out_parameters;
+		var jscode = emit_method_call (m, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
+		if (!(expr.parent_node is ExpressionStatement && has_out_parameters))
 			set_jsvalue (expr, jscode);
 	}
 
@@ -670,6 +671,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			stmt.finally_body.emit (this);
 		}
 		js.close ();
+	}
+
+	public override void visit_array_creation_expression (ArrayCreationExpression expr) {
+		var jssizes = jslist (true);
+		foreach (var size in expr.get_sizes ()) {
+			jssizes.add (get_jsvalue (size));
+		}
+		set_jsvalue (expr, jsdova().member("array").call (jssizes));
 	}
 
 	public JSCode generate_method (Method m) {
@@ -762,10 +771,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSCode? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, CodeNode? node_reference = null) {
+	public JSCode? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_parameters = false, CodeNode? node_reference = null) {
 		var has_result = !(m.return_type is VoidType) || m is CreationMethod;
-
-		var has_out_parameters = false;
 		Expression[] out_results = null;
 		var jsargs = jslist ();
 
@@ -791,7 +798,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		} else {
 			jscall.call (jsargs);
 		}
-
 		JSCode jscode = null;
 		if (has_out_parameters) {
 			var result_tmp = get_temp_variable_name ();
@@ -804,7 +810,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			foreach (var out_result in out_results) {
 				js.stmt (jsexpr (get_jsvalue (out_result)).assign (jsmember (result_tmp).element (out_results_index++)));
 			}
-		} else if (has_result) {
+		} else {
 			jscode = jscall;
 		}
 		return jscode;

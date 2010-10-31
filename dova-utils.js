@@ -9,3 +9,8 @@ Dova.mixin = function(dest, over) {
 	dest[key] = over;
     return dest;
 };
+Dova.array = function(sizes) {
+    // FIXME: more sizes
+    var res = [];
+    res[sizes[0]] = undefined;
+};
