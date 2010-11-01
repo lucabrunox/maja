@@ -357,9 +357,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_context (new EmitContext (m));
 
 		var cl = current_class;
-		if (cl == null || m == cl.default_construction_method)
-			return;
-		generate_construction_method (cl, m);
+		if (!(cl == null || m == cl.default_construction_method)) {
+			generate_construction_method (cl, m);
+		}
 
 		pop_context ();
 	}
