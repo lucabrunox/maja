@@ -14,3 +14,8 @@ Dova.array = function(sizes) {
     var res = [];
     res[sizes[0]] = undefined;
 };
+Dova.to_string = function() {
+    if (typeof this == "string")
+	return this;
+    return this.to_string ();
+};

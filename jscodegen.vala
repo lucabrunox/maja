@@ -187,7 +187,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	/* (constant) hash table with all reserved identifiers in the generated code */
 	Set<string> reserved_identifiers = new HashSet<string> (str_hash, str_equal);
 	/* (constant) set with full name of dova -> javascript mappings */
-	Set<string> static_method_mapping = new HashSet<string> (str_hash, str_equal);
+	Map<string,string> static_method_mapping = new HashMap<string,string> (str_hash, str_equal);
 	/* (constant) set with full name of native javascript mappings */
 	Map<string,string> native_mapping = new HashMap<string,string> (str_hash, str_equal);
 
@@ -218,7 +218,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		// reserved for Maja naming conventions
 		reserved_identifiers.add ("error");
 
-		static_method_mapping.add ("string.contains");
+		static_method_mapping["string.contains"] = "string.prototype.contains";
+		static_method_mapping["any.to_string"] = "Dova.to_string";
 
 		native_mapping["string.index_of"] = "indexOf";
 	}
@@ -397,17 +398,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_block (Block block) {
-		/*		if (current_symbol is Block) {
-			js.open_block ();
-			}*/
+		/*if (current_symbol is Block) {
+		  js.open_block ();
+		  }*/
 		emit_context.push_symbol (block);
 		foreach (var stmt in block.get_statements ()) {
 			stmt.emit (this);
 		}
 		emit_context.pop_symbol ();
 		/*if (current_symbol is Block) {
-			js.close ();
-			}*/
+		  js.close ();
+		  }*/
 	}
 
 	public override void visit_declaration_statement (DeclarationStatement stmt) {
@@ -540,10 +541,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (ma.member_name != "this") {
 			member_name = get_variable_jsname (member_name);
 		}
-
 		if (ma.inner != null) {
-			if (ma.symbol_reference.get_full_name () in static_method_mapping) {
-				jscode = jsbind (jsmember(ma.symbol_reference.parent_symbol.get_full_name ()).member("prototype").member(member_name), get_jsvalue (ma.inner));
+			var static_method_name = static_method_mapping[ma.symbol_reference.get_full_name ()];
+			if (static_method_name != null) {
+				jscode = jsbind (jsmember (static_method_name), get_jsvalue (ma.inner));
 			} else {
 				var native_name = native_mapping[ma.symbol_reference.get_full_name ()];
 				if (native_name != null) {

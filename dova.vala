@@ -1,4 +1,4 @@
-public extern abstract class any {
+public abstract class any {
 	// allow nullable this
 	public abstract bool equals (any? other);
 
