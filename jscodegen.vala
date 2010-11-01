@@ -365,6 +365,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_formal_parameter (FormalParameter param) {
+		if (param.ellipsis) {
+			return;
+		}
+
 		if (param.direction == ParameterDirection.IN) {
 			var param_list = (JSList) js.current.expr;
 			param_list.add_string ("param_"+param.name);

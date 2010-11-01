@@ -161,6 +161,7 @@ class Maja.Compiler {
 
         if (!nostdpkg) {
           context.add_external_package ("dova-base-0.1");
+		  context.add_external_package ("dova-utils");
 		}
 
 		if (fast_vapis != null) {
