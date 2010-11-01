@@ -185,7 +185,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public JSBlockBuilder js { get { return emit_context.js; } }
 
 	/* (constant) hash table with all reserved identifiers in the generated code */
-	Set<string> reserved_identifiers;
+	Set<string> reserved_identifiers = new HashSet<string> (str_hash, str_equal);
+	/* (constant) set with full name of dova -> javascript mappings */
+	Set<string> static_method_mapping = new HashSet<string> (str_hash, str_equal);
+	/* (constant) set with full name of native javascript mappings */
+	Map<string,string> native_mapping = new HashMap<string,string> (str_hash, str_equal);
 
 	public Gee.Map<string,string> variable_name_map {
 		get { return emit_context.variable_name_map; }
@@ -206,8 +210,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public DataType object_type;
 
 	public JSCodeGenerator () {
-		reserved_identifiers = new HashSet<string> (str_hash, str_equal);
-
         // TODO:
 		reserved_identifiers.add ("this");
 		reserved_identifiers.add ("for");
@@ -215,6 +217,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		// reserved for Maja naming conventions
 		reserved_identifiers.add ("error");
+
+		static_method_mapping.add ("string.contains");
+
+		native_mapping["string.index_of"] = "indexOf";
 	}
 
 	public override void emit (CodeContext context) {
@@ -528,20 +534,27 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_member_access (MemberAccess ma) {
-		JSCode jscode = jsmember (get_variable_jsname (ma.member_name));
-		var expr = ma.inner;
-		while (expr != null) {
-			if (expr is MemberAccess) {
-				var name = ((MemberAccess) expr).member_name;
-				if (name != "this")
-					name = get_variable_jsname (name);
-				jscode = jsmember (name).member_code (jscode);
-				expr = ((MemberAccess) expr).inner;
-			} else {
-				jscode = jsexpr (get_jsvalue (expr)).member_code (jscode);
-				break;
-			}
+		JSCode jscode = null;
+
+		var member_name = ma.member_name;
+		if (ma.member_name != "this") {
+			member_name = get_variable_jsname (member_name);
 		}
+
+		if (ma.inner != null) {
+			if (ma.symbol_reference.get_full_name () in static_method_mapping) {
+				jscode = jsbind (jsmember(ma.symbol_reference.parent_symbol.get_full_name ()).member("prototype").member(member_name), get_jsvalue (ma.inner));
+			} else {
+				var native_name = native_mapping[ma.symbol_reference.get_full_name ()];
+				if (native_name != null) {
+					member_name = native_name;
+				}
+				jscode = jsexpr (get_jsvalue (ma.inner)).member (member_name);
+			}
+		} else {
+			jscode = jsmember (member_name);
+		}
+
 		set_jsvalue (ma, jscode);
 	}
 
@@ -771,8 +784,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return new JSObject ();
 	}
 
-	public JSExpressionBuilder jsbind (JSCode expr) {
-		return jsdova().member("bind").call (jslist().add (jsmember ("this")).add (expr));
+	public JSExpressionBuilder jsbind (JSCode func, JSCode? scope = null) {
+		return jsdova().member("bind").call (jslist().add (scope ?? jsmember ("this")).add (func));
 	}
 
 	public JSExpressionBuilder jsstring (string value) {
