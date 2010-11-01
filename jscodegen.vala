@@ -229,6 +229,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		root_symbol = context.root;
 
+		jsfile = new JSFile ();
+
 		/* we're only interested in non-pkg source files */
 		var source_files = context.get_source_files ();
 		foreach (SourceFile file in source_files) {
@@ -238,6 +240,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			}
 		}
 
+		var jssource_filename = "%s.js".printf (context.output);
+		if (!jsfile.store (jssource_filename, null, context.version_header, context.debug)) {
+			Report.error (null, "unable to open `%s' for writing".printf (jssource_filename));
+		}
 	}
 
 	public void push_context (EmitContext emit_context) {
@@ -283,8 +289,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_source_file (SourceFile source_file) {
-		jsfile = new JSFile ();
-		jsdecl = new JSBlockBuilder (jsfile);
+		var jsblock = new JSBlock ();
+		jsblock.no_semicolon = true;
+		jsdecl = new JSBlockBuilder (jsblock);
 
 		source_file.accept_children (this);
 
@@ -300,13 +307,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			return;
 		}
 
-		var csource_filename = source_file.get_csource_filename ();
-		var jssource_filename = "%s.js".printf (csource_filename.ndup (csource_filename.length - ".vala.c".length));
-		if (!jsfile.store (jssource_filename, source_file.filename, context.version_header, context.debug)) {
-			Report.error (null, "unable to open `%s' for writing".printf (jssource_filename));
-		}
-
-		jsfile = null;
+		jsfile.statements.add (jsblock);
 	}
 
 	public override void visit_class (Class cl) {
