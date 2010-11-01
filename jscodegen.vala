@@ -592,7 +592,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jscode = jsmember (cl.get_full_name ());
 		if (expr.symbol_reference != cl.default_construction_method)
 			jscode.member (expr.symbol_reference.name);
-		set_jsvalue (expr, emit_method_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), null, expr));
+		jscode = emit_method_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), null, expr);
+		set_jsvalue (expr, jscode.keyword ("new"));
 	}
 
 	public override void visit_assignment (Assignment expr) {
@@ -708,6 +709,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		set_jsvalue (expr, jsexpr (get_jsvalue (expr.container)).element_code (jsindices));
 	}
 
+	public override void visit_cast_expression (CastExpression expr) {
+		set_jsvalue (expr, get_jsvalue (expr.inner));
+	}
+
 	public JSCode generate_method (Method m) {
 		push_context (new EmitContext (m));
 
@@ -798,9 +803,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSCode? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results = false, CodeNode? node_reference = null) {
+	public JSExpressionBuilder? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null) {
 		var has_result = !(m.return_type is VoidType) || m is CreationMethod;
 		Expression[] out_results = null;
+		has_out_results = false;
 		var jsargs = jslist ();
 
 		var arg_it = arguments.iterator ();
@@ -821,12 +827,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			}
 		}
 
-		if (m is CreationMethod) {
-			jscall.call_new (jsargs);
-		} else {
-			jscall.call (jsargs);
-		}
-		JSCode jscode = null;
+		jscall.call (jsargs);
+		JSExpressionBuilder jscode = null;
 		if (has_out_results) {
 			var result_tmp = get_temp_variable_name ();
 			js.stmt (jsvar (result_tmp).assign (jscall));

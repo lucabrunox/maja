@@ -160,8 +160,8 @@ class Maja.Compiler {
         context.profile = Vala.Profile.DOVA;
 
         if (!nostdpkg) {
-          context.add_external_package ("dova-base-0.1");
-		  context.add_external_package ("dova-utils");
+			context.add_external_package ("js-lang");
+			context.add_external_package ("dova-base-0.1");
 		}
 
 		if (fast_vapis != null) {
