@@ -364,7 +364,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		pop_context ();
 	}
 
-	public override void visit_formal_parameter (FormalParameter param) {
+	public override void visit_formal_parameter (Vala.Parameter param) {
 		if (param.ellipsis) {
 			return;
 		}
@@ -886,6 +886,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			jsdecl.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
 		}
 	}
+
+	public override LocalVariable create_local (DataType type) {
+		return null;
+	}
+
+	public override TargetValue load_local (LocalVariable local) {
+		return null;
+	}
+
+	public override void store_local (LocalVariable local, TargetValue value) {}
 }
 
 public class Maja.JSValue : TargetValue {

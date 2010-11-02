@@ -204,20 +204,7 @@ class Maja.Compiler {
 			return quit ();
 		}
 
-		var analyzer = new SemanticAnalyzer ();
-		analyzer.analyze (context);
-
-		if (dump_tree != null) {
-			var code_writer = new CodeWriter (CodeWriterType.DUMP);
-			code_writer.write_file (context, dump_tree);
-		}
-
-		if (context.report.get_errors () > 0 || (fatal_warnings && context.report.get_warnings () > 0)) {
-			return quit ();
-		}
-
-		var flow_analyzer = new FlowAnalyzer ();
-		flow_analyzer.analyze (context);
+		context.check ();
 
 		if (context.report.get_errors () > 0 || (fatal_warnings && context.report.get_warnings () > 0)) {
 			return quit ();
