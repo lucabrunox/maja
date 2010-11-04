@@ -37,6 +37,7 @@ class Maja.Compiler {
 	static string[] packages;
 	[CCode (array_length = false, array_null_terminated = true)]
 	static string[] fast_vapis;
+	static bool version;
 
 	static string fast_vapi_filename;
 	static string symbols_filename;
@@ -88,6 +89,7 @@ class Maja.Compiler {
 		{ "fatal-warnings", 0, 0, OptionArg.NONE, ref fatal_warnings, "Treat warnings as fatal", null },
 		{ "quiet", 'q', 0, OptionArg.NONE, ref quiet_mode, "Do not print messages to the console", null },
 		{ "verbose", 'v', 0, OptionArg.NONE, ref verbose_mode, "Print additional messages to the console", null },
+		{ "version", 0, 0, OptionArg.NONE, ref version, "Print version information to the console", null },
 		{ "", 0, 0, OptionArg.FILENAME_ARRAY, ref sources, null, "FILE..." },
 		{ null }
 	};
@@ -238,7 +240,12 @@ class Maja.Compiler {
 			stdout.printf ("Run '%s --help' to see a full list of available command line options.\n", args[0]);
 			return 1;
 		}
-				
+
+		if (version) {
+			stdout.printf ("%s\n", Package.STRING);
+			return 0;
+		}
+		
 		if (sources == null && fast_vapis == null) {
 			stderr.printf ("No source file specified.\n");
 			return 1;

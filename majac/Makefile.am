@@ -23,6 +23,8 @@ majac_CFLAGS = \
 
 majac_VALAFLAGS = \
 	--thread \
+	--vapidir $(top_srcdir)/majac \
+	--pkg config \
 	--pkg gee-1.0 \
 	--pkg $(VALA_PACKAGE) \
 	$(NULL)

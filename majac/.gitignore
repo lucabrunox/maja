@@ -1,4 +1,5 @@
 .deps/
+config.vapi
 config.h
 config.h.in
 majac
