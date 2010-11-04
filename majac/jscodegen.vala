@@ -181,7 +181,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public EmitContext base_finalize_context;
 	public EmitContext instance_init_context;
 	public EmitContext instance_finalize_context;
-	
+
 	public JSBlockBuilder js { get { return emit_context.js; } }
 
 	/* (constant) hash table with all reserved identifiers in the generated code */
@@ -438,7 +438,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jscode = jsexpr (jsleft);
 		switch (expr.operator) {
 		case BinaryOperator.PLUS:
-			jscode.plus (jsright); 
+			jscode.plus (jsright);
 			break;
 		case BinaryOperator.MINUS:
 			jscode.minus (jsright);

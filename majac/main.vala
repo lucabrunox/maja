@@ -93,7 +93,7 @@ class Maja.Compiler {
 		{ "", 0, 0, OptionArg.FILENAME_ARRAY, ref sources, null, "FILE..." },
 		{ null }
 	};
-	
+
 	private int quit () {
 		if (context.report.get_errors () == 0 && context.report.get_warnings () == 0) {
 			return 0;
@@ -173,7 +173,7 @@ class Maja.Compiler {
 				context.add_source_file (source_file);
 			}
 		}
-		
+
 		if (context.report.get_errors () > 0 || (fatal_warnings && context.report.get_warnings () > 0)) {
 			return quit ();
 		}
@@ -185,7 +185,7 @@ class Maja.Compiler {
 		}
 
 		sources = null;
-		
+
 		var parser = new Parser ();
 		parser.parse (context);
 
@@ -198,10 +198,10 @@ class Maja.Compiler {
 			interface_writer.write_file (context, fast_vapi_filename);
 			return quit ();
 		}
-		
+
 		var resolver = new SymbolResolver ();
 		resolver.resolve (context);
-		
+
 		if (context.report.get_errors () > 0 || (fatal_warnings && context.report.get_warnings () > 0)) {
 			return quit ();
 		}
@@ -245,12 +245,12 @@ class Maja.Compiler {
 			stdout.printf ("%s\n", Package.STRING);
 			return 0;
 		}
-		
+
 		if (sources == null && fast_vapis == null) {
 			stderr.printf ("No source file specified.\n");
 			return 1;
 		}
-		
+
 		var compiler = new Compiler ();
 		return compiler.run ();
 	}

@@ -47,12 +47,12 @@ public class Maja.JSWriter {
 	private bool file_exists;
 
 	private FileStream? stream;
-	
+
 	private int indent;
 
 	/* at begin of line */
 	private bool _bol = true;
-	
+
 	public JSWriter (string filename, string? source_filename = null) {
 		this.filename = filename;
 		this.source_filename = source_filename;
@@ -104,7 +104,7 @@ public class Maja.JSWriter {
 	 */
 	public void close () {
 		stream = null;
-		
+
 		if (file_exists) {
 			var changed = true;
 
@@ -122,7 +122,7 @@ public class Maja.JSWriter {
 			} catch (FileError e) {
 				// assume changed if mmap comparison doesn't work
 			}
-			
+
 			if (changed) {
 				FileUtils.rename (temp_filename, filename);
 			} else {
@@ -130,7 +130,7 @@ public class Maja.JSWriter {
 			}
 		}
 	}
-	
+
 	/**
 	 * Writes tabs according to the current indent level.
 	 */
@@ -138,14 +138,14 @@ public class Maja.JSWriter {
 		if (!bol) {
 			write_newline ();
 		}
-		
+
 		for (int i = 0; i < indent; i++) {
 			stream.putc ('\t');
 		}
-		
+
 		_bol = false;
 	}
-	
+
 	/**
 	 * Writes the specified string.
 	 *
@@ -155,7 +155,7 @@ public class Maja.JSWriter {
 		stream.puts (s);
 		_bol = false;
 	}
-	
+
 	/**
 	 * Writes a newline.
 	 */
@@ -163,7 +163,7 @@ public class Maja.JSWriter {
 		stream.putc ('\n');
 		_bol = true;
 	}
-	
+
 	/**
 	 * Opens a new block, increasing the indent level.
 	 */
@@ -177,18 +177,18 @@ public class Maja.JSWriter {
 		write_newline ();
 		indent++;
 	}
-	
+
 	/**
 	 * Closes the current block, decreasing the indent level.
 	 */
 	public void write_end_block () {
 		assert (indent > 0);
-		
+
 		indent--;
 		write_indent ();
 		stream.putc ('}');
 	}
-	
+
 	/**
 	 * Writes the specified text as comment.
 	 *
@@ -205,7 +205,7 @@ public class Maja.JSWriter {
 
 			/* separate declaration due to missing memory management in foreach statements */
 			var lines = text.split ("\n");
-		
+
 			foreach (string line in lines) {
 				if (!first) {
 					write_indent ();

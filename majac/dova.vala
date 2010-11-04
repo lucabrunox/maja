@@ -208,7 +208,7 @@ public class string : Dova.Value {
 
 	// to_upper is hardcoded as toUpperCase
 
-	// replace() is 
+	// replace() is
 	public string replace (string old, string replacement) {
 		assert (old.length > 0);
 
