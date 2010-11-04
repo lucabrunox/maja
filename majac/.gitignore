@@ -1,0 +1,8 @@
+.deps/
+config.h
+config.h.in
+majac
+*.c
+*.o
+majac_vala.stamp
+stamp-h1
