@@ -13,6 +13,7 @@ Dova.array = function(sizes) {
     // FIXME: more sizes
     var res = [];
     res[sizes[0]] = undefined;
+    return res;
 };
 Dova.to_string = function() {
     if (typeof this == "string")
