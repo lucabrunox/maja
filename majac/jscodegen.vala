@@ -411,17 +411,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_block (Block block) {
-		/*if (current_symbol is Block) {
-		  js.open_block ();
-		  }*/
+		if (block.captured) {
+			js.open_block ();
+		}
 		emit_context.push_symbol (block);
 		foreach (var stmt in block.get_statements ()) {
 			stmt.emit (this);
 		}
 		emit_context.pop_symbol ();
-		/*if (current_symbol is Block) {
-		  js.close ();
-		  }*/
+		if (block.captured) {
+			js.close ();
+		}
 	}
 
 	public override void visit_declaration_statement (DeclarationStatement stmt) {
