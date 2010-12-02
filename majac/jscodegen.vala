@@ -174,6 +174,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public EmitContext namespace_decl_context;
 	public EmitContext decl_context;
+	public EmitContext entry_point_context;
 	public EmitContext base_init_context;
 
 	public JSBlockBuilder js { get { return emit_context.js; } }
@@ -238,6 +239,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		jsblock.no_semicolon = true;
 		jsfile.statements.add (jsblock);
 		push_function (new JSBlockBuilder (jsblock));
+
+		entry_point_context = new EmitContext ();
+		push_context (entry_point_context);
+		jsblock = new JSBlock ();
+		jsblock.no_semicolon = true;
+		jsfile.statements.add (jsblock);
+		push_function (new JSBlockBuilder (jsblock));
+		pop_context ();
 
 		context.root.accept_children (this);
 
@@ -338,6 +347,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_method (Method m) {
 		if (m.external) {
+			return;
+		}
+
+		if (m.entry_point) {
+			push_context (entry_point_context);
+			m.body.emit (this);
+			pop_context ();
 			return;
 		}
 
