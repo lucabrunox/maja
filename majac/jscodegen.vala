@@ -55,9 +55,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public Symbol root_symbol;
 
-	public JSFile jsfile;
-	public JSBlockBuilder jsdecl;
-
 	public EmitContext emit_context = new EmitContext ();
 
 	Gee.List<EmitContext> emit_context_stack = new Gee.ArrayList<EmitContext> ();
@@ -175,12 +172,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return block;
 	}
 
-	public EmitContext class_init_context;
+	public EmitContext namespace_decl_context;
+	public EmitContext decl_context;
 	public EmitContext base_init_context;
-	public EmitContext class_finalize_context;
-	public EmitContext base_finalize_context;
-	public EmitContext instance_init_context;
-	public EmitContext instance_finalize_context;
 
 	public JSBlockBuilder js { get { return emit_context.js; } }
 
@@ -229,16 +223,23 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		root_symbol = context.root;
 
-		jsfile = new JSFile ();
+		var jsfile = new JSFile ();
 
-		/* we're only interested in non-pkg source files */
-		var source_files = context.get_source_files ();
-		foreach (SourceFile file in source_files) {
-			if (file.file_type == SourceFileType.SOURCE ||
-			    (context.header_filename != null && file.file_type == SourceFileType.FAST)) {
-				file.accept (this);
-			}
-		}
+		namespace_decl_context = new EmitContext ();
+		push_context (namespace_decl_context);
+		var jsblock = new JSBlock ();
+		jsblock.no_semicolon = true;
+		jsfile.statements.add (jsblock);
+		push_function (new JSBlockBuilder (jsblock));
+		pop_context ();
+
+		decl_context = emit_context;
+		jsblock = new JSBlock ();
+		jsblock.no_semicolon = true;
+		jsfile.statements.add (jsblock);
+		push_function (new JSBlockBuilder (jsblock));
+
+		context.root.accept_children (this);
 
 		var jssource_filename = "%s.js".printf (context.output);
 		if (!jsfile.store (jssource_filename, null, context.version_header, context.debug)) {
@@ -288,35 +289,27 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 	}
 
-	public override void visit_source_file (SourceFile source_file) {
-		var jsblock = new JSBlock ();
-		jsblock.no_semicolon = true;
-		jsdecl = new JSBlockBuilder (jsblock);
-
-		source_file.accept_children (this);
-
-		if (context.report.get_errors () > 0) {
+	public override void visit_namespace (Namespace ns) {
+		if (ns.external_package) {
 			return;
 		}
 
-		/* For fast-vapi, we only wanted the header declarations
-		 * to be emitted, so bail out here without writing the
-		 * C code output.
-		 */
-		if (source_file.file_type == SourceFileType.FAST) {
-			return;
-		}
-
-		jsfile.statements.add (jsblock);
+		ns.accept_children (this);
 	}
 
 	public override void visit_class (Class cl) {
+		if (cl.external) {
+			return;
+		}
+
 		push_context (new EmitContext (cl));
 
 		// constructor defines the class too
 		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
 		if (cl.base_class != null) {
-			jsdecl.stmt (jsmaja().member("mixin").call (jslist().add (jsmember(cl.get_full_name()).member("prototype")).add (jsmember(cl.base_class.get_full_name()).member("prototype"))));
+			push_context (decl_context);
+			js.stmt (jsmaja().member("mixin").call (jslist().add (jsmember(cl.get_full_name()).member("prototype")).add (jsmember(cl.base_class.get_full_name()).member("prototype"))));
+			pop_context ();
 		}
 
 		// init function
@@ -329,15 +322,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 		pop_context ();
 
-		jsdecl.stmt (jsmember(cl.name).member("prototype._maja_init").assign (init_func));
+		push_context (decl_context);
+		js.stmt (jsmember(cl.name).member("prototype._maja_init").assign (init_func));
+		pop_context ();
 
 		cl.accept_children (this);
 		pop_context ();
 	}
 
 	public override void visit_method (Method m) {
-		if (m.external)
+		if (m.external) {
 			return;
+		}
 
 		var func = generate_method (m);
 
@@ -350,10 +346,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			}
 		}
 		def.member (m.name).assign (func);
-		jsdecl.stmt (def);
+		push_context (decl_context);
+		js.stmt (def);
+		pop_context ();
 	}
 
 	public override void visit_creation_method (CreationMethod m) {
+		if (m.external) {
+			return;
+		}
+
 		push_context (new EmitContext (m));
 
 		var cl = current_class;
@@ -565,6 +567,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_field (Field field) {
+		if (field.external) {
+			return;
+		}
+
 		if (field.binding == MemberBinding.INSTANCE) {
 			push_context (base_init_context);
 			JSCode rhs = null;
@@ -881,10 +887,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (m.name != ".new") {
 			jscode.member (m.name);
 		}
-		jsdecl.stmt (jsexpr(jscode).assign (func));
+		push_context (decl_context);
+		js.stmt (jsexpr(jscode).assign (func));
 		if (m.name != ".new") {
-			jsdecl.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
+			js.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
 		}
+		pop_context ();
 	}
 
 	public override LocalVariable create_local (DataType type) {
