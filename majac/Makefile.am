@@ -27,3 +27,8 @@ majac_VALAFLAGS = \
 	--pkg gee-1.0 \
 	--pkg $(VALA_PACKAGE) \
 	$(NULL)
+
+all-local: dova-base-0.1.js
+
+dova-base-0.1.js: dova-base-0.1.vala majac
+	$(builddir)/majac --vapidir $(top_srcdir)/dova-vapi --nostdpkg $<
