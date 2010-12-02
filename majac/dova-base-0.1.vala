@@ -10,7 +10,7 @@ public abstract class Dova.Type {
 }
 
 public class Dova.Object : any {
-	public override sealed bool equals (any? other) {
+	public override bool equals (any? other) {
 		return (this == other);
 	}
 

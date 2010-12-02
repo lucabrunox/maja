@@ -316,7 +316,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		// constructor defines the class too
 		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
 		if (cl.base_class != null) {
-			jsdecl.stmt (jsdova().member("mixin").call (jslist().add (jsmember(cl.get_full_name()).member("prototype")).add (jsmember(cl.base_class.get_full_name()).member("prototype"))));
+			jsdecl.stmt (jsmaja().member("mixin").call (jslist().add (jsmember(cl.get_full_name()).member("prototype")).add (jsmember(cl.base_class.get_full_name()).member("prototype"))));
 		}
 
 		// init function
@@ -698,7 +698,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		foreach (var size in expr.get_sizes ()) {
 			jssizes.add (get_jsvalue (size));
 		}
-		set_jsvalue (expr, jsdova().member("array").call (jssizes));
+		set_jsvalue (expr, jsmaja().member("array").call (jssizes));
 	}
 
 	public override void visit_element_access (ElementAccess expr) {
@@ -773,8 +773,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("null");
 	}
 
-	public JSExpressionBuilder jsdova () {
-		return jstext ("Dova");
+	public JSExpressionBuilder jsmaja () {
+		return jstext ("Maja");
 	}
 
 	public JSExpressionBuilder jsundefined () {
@@ -796,7 +796,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public JSExpressionBuilder jsbind (JSCode func, JSCode? scope = null) {
-		return jsdova().member("bind").call (jslist().add (scope ?? jsmember ("this")).add (func));
+		return jsmaja().member("bind").call (jslist().add (scope ?? jsmember ("this")).add (func));
 	}
 
 	public JSExpressionBuilder jsstring (string value) {
