@@ -294,6 +294,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			return;
 		}
 
+		push_context (namespace_decl_context);
+		js.open_if (jsmember(ns.get_full_name ()).negate());
+		js.stmt (jsmember(ns.get_full_name ()).assign (jsobject ()));
+		js.close ();
+		pop_context ();
+
 		ns.accept_children (this);
 	}
 
