@@ -540,17 +540,19 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		bool has_out_parameters = false;
-		foreach (var param in m.get_parameters ()) {
-			if (param.direction == ParameterDirection.IN)
-				continue;
- 			if (!has_out_parameters) {
-				has_out_parameters = true;
-				if (result == null)
-					result = jsexpr().array ();
-				else
-					result.array ();
+		if (m != null) {
+			foreach (var param in m.get_parameters ()) {
+				if (param.direction == ParameterDirection.IN)
+					continue;
+				if (!has_out_parameters) {
+					has_out_parameters = true;
+					if (result == null)
+						result = jsexpr().array ();
+					else
+						result.array ();
+				}
+				result.add_array_element (jstext (param.name));
 			}
-			result.add_array_element (jstext (param.name));
 		}
 
 		if (result != null) {
@@ -605,6 +607,35 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			js.stmt (jsmember("this").member(field.name).assign (rhs));
 			pop_context ();
 		}
+	}
+
+	public override void visit_property (Property prop) {
+		if (prop.external) {
+			return;
+		}
+
+		prop.accept_children (this);
+	}
+
+	public override void visit_property_accessor (PropertyAccessor acc) {
+		push_context (new EmitContext (acc));
+		var func = jsfunction ();
+		push_function (func);
+		if (acc.writable && acc.value_parameter != null) {
+			acc.value_parameter.accept (this);
+		}
+		acc.body.emit (this);
+		pop_context ();
+
+		var name = acc.parent_symbol.name;
+		if (acc.readable) {
+			name = "get_"+name;
+		} else {
+			name = "set_"+name;
+		}
+		push_context (decl_context);
+		js.stmt (jsmember (acc.parent_symbol.get_full_name ()).member (name).assign (func));
+		pop_context ();
 	}
 
 	public override void visit_expression_statement (ExpressionStatement stmt) {
