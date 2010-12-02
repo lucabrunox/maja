@@ -166,6 +166,14 @@ class Maja.Compiler {
 			context.add_external_package ("dova-base-0.1");
 		}
 
+
+		if (packages != null) {
+			foreach (string package in packages) {
+				context.add_external_package (package);
+			}
+			packages = null;
+		}
+
 		if (fast_vapis != null) {
 			foreach (string vapi in fast_vapis) {
 				var rpath = CodeContext.realpath (vapi);

@@ -173,6 +173,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public EmitContext namespace_decl_context;
+	public EmitContext constructor_decl_context;
 	public EmitContext decl_context;
 	public EmitContext entry_point_context;
 	public EmitContext base_init_context;
@@ -214,9 +215,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		reserved_identifiers.add ("error");
 
 		static_method_mapping["string.contains"] = "string.prototype.contains";
-		static_method_mapping["any.to_string"] = "Dova.to_string";
+		//static_method_mapping["any.to_string"] = "Dova.to_string";
+		//static_method_mapping["int.to_string"] = "Dova.to_string";
 
 		native_mapping["string.index_of"] = "indexOf";
+		native_mapping["string.toString"] = "toString";
+		native_mapping["int.to_string"] = "toString";
 	}
 
 	public override void emit (CodeContext context) {
@@ -229,6 +233,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		namespace_decl_context = new EmitContext ();
 		push_context (namespace_decl_context);
 		var jsblock = new JSBlock ();
+		jsblock.no_semicolon = true;
+		jsfile.statements.add (jsblock);
+		push_function (new JSBlockBuilder (jsblock));
+		pop_context ();
+
+		constructor_decl_context = new EmitContext ();
+		push_context (constructor_decl_context);
+		jsblock = new JSBlock ();
 		jsblock.no_semicolon = true;
 		jsfile.statements.add (jsblock);
 		push_function (new JSBlockBuilder (jsblock));
@@ -304,9 +316,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		push_context (namespace_decl_context);
-		js.open_if (jsmember(ns.get_full_name ()).negate());
 		js.stmt (jsmember(ns.get_full_name ()).assign (jsobject ()));
-		js.close ();
 		pop_context ();
 
 		ns.accept_children (this);
@@ -338,7 +348,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		pop_context ();
 
 		push_context (decl_context);
-		js.stmt (jsmember(cl.name).member("prototype._maja_init").assign (init_func));
+		js.stmt (jsmember(cl.get_full_name()).member("prototype._maja_init").assign (init_func));
 		pop_context ();
 
 		cl.accept_children (this);
@@ -566,7 +576,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_member_access (MemberAccess ma) {
-		JSCode jscode = null;
+		JSExpressionBuilder jscode = null;
 
 		var member_name = ma.member_name;
 		if (ma.member_name != "this") {
@@ -581,7 +591,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				if (native_name != null) {
 					member_name = native_name;
 				}
-				jscode = jsexpr (get_jsvalue (ma.inner)).member (member_name);
+				jscode = jsexpr (get_jsvalue (ma.inner));
+				if (ma.symbol_reference is Property) {
+					jscode.member ("get_"+member_name).call ();
+				} else {
+					jscode.member (member_name);
+				}
 			}
 		} else {
 			jscode = jsmember (member_name);
@@ -634,7 +649,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			name = "set_"+name;
 		}
 		push_context (decl_context);
-		js.stmt (jsmember (acc.parent_symbol.get_full_name ()).member (name).assign (func));
+		js.stmt (jsmember (acc.parent_symbol.parent_symbol.get_full_name ()).member ("prototype").member (name).assign (func));
 		pop_context ();
 	}
 
@@ -667,6 +682,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			m = ((Class) expr.call.symbol_reference).default_construction_method;
 		else
 			m = (Method) expr.call.symbol_reference;
+
 		bool has_out_parameters;
 		var jscode = emit_method_call (m, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
 		if (!(expr.parent_node is ExpressionStatement && has_out_parameters))
@@ -940,7 +956,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (m.name != ".new") {
 			jscode.member (m.name);
 		}
-		push_context (decl_context);
+		if (m.name == ".new") {
+			push_context (constructor_decl_context);
+		} else {
+			push_context (decl_context);
+		}
 		js.stmt (jsexpr(jscode).assign (func));
 		if (m.name != ".new") {
 			js.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
