@@ -40,8 +40,6 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AM_PROG_VALAC($VALA_REQUIRED)
 
-GOBJECT_INTROSPECTION_CHECK([0.6.4])
-
 VALA_PACKAGE=libvala-0.12
 AC_SUBST(VALA_PACKAGE)
 
@@ -65,5 +63,6 @@ AC_CHECK_HEADERS([stdlib.h string.h])
 
 AC_CONFIG_FILES([Makefile
                  majac/Makefile
+                 tests/Makefile
                  maja-$MAJA_API_VERSION.pc])
 AC_OUTPUT
