@@ -5,7 +5,7 @@ JSBIN = smjs
 TESTS_ENVIRONMENT = $(JSBIN) -f $(top_srcdir)/majac/maja-utils.js -f $(top_builddir)/majac/dova-base-0.1.js
 
 TESTS = \
-	test.js \
+	blockcapture.js \
 	$(NULL)
 
 .vala.js:

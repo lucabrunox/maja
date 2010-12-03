@@ -51,7 +51,6 @@ class Maja.Compiler {
 	static bool deprecated;
 	static bool experimental;
 	static bool disable_warnings;
-	static string dump_tree;
 	[CCode (array_length = false, array_null_terminated = true)]
 	static string[] defines;
 	static bool quiet_mode;
