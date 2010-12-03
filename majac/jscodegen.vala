@@ -29,6 +29,12 @@ using Vala;
  * Code visitor generating C Code.
  */
 public class Maja.JSCodeGenerator : CodeGenerator {
+	public enum ControlFlowStatement {
+		RETURN,
+		BREAK,
+		CONTINUE
+	}
+
 	public class EmitContext {
 		public Symbol? current_symbol;
 		public Gee.LinkedList<Symbol> symbol_stack = new Gee.LinkedList<Symbol> ();
@@ -160,7 +166,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		unowned Block block = null;
 		while (true) {
 			block = sym as Block;
-			if (!(sym is Block || sym is Method)) {
+			if (!(sym is Block)) {
 				// no closure block
 				break;
 			}
@@ -176,7 +182,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public EmitContext namespace_decl_context;
 	public EmitContext constructor_decl_context;
 	public EmitContext decl_context;
-	public EmitContext entry_point_context;
 	public EmitContext base_init_context;
 
 	public JSBlockBuilder js { get { return emit_context.js; } }
@@ -251,15 +256,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		jsfile.statements.add (jsblock);
 		push_function (new JSBlockBuilder (jsblock));
 
-		entry_point_context = new EmitContext ();
-		push_context (entry_point_context);
-		jsblock = new JSBlock ();
-		jsblock.no_semicolon = true;
-		jsfile.statements.add (jsblock);
-		push_function (new JSBlockBuilder (jsblock));
-		pop_context ();
-
 		context.root.accept_children (this);
+
+		if (context.entry_point != null) {
+			jsfile.statements.add (jsmember (context.entry_point.get_full_name ()).call ());
+		}
 
 		var jssource_filename = "%s.js".printf (context.output);
 		if (!jsfile.store (jssource_filename, null, context.version_header, context.debug)) {
@@ -290,7 +291,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public void pop_function () {
-		emit_context.js = emit_context.js_stack.poll_head ();
+		emit_context.js_stack.poll_head ();
+		emit_context.js = emit_context.js_stack.peek_head ();
 	}
 
 	public bool add_symbol_declaration (CCodeFile decl_space, Symbol sym, string name) {
@@ -356,13 +358,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_method (Method m) {
 		if (m.external) {
-			return;
-		}
-
-		if (m.entry_point) {
-			push_context (entry_point_context);
-			m.body.emit (this);
-			pop_context ();
 			return;
 		}
 
@@ -436,8 +431,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_block (Block block) {
+		JSBlockBuilder func = null;
 		if (block.captured) {
-			js.open_block ();
+			func = jsfunction ();
+			push_function (func);
 		}
 		emit_context.push_symbol (block);
 		foreach (var stmt in block.get_statements ()) {
@@ -445,6 +442,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 		emit_context.pop_symbol ();
 		if (block.captured) {
+			pop_function ();
+			var temp = get_temp_variable_name ();
+			js.stmt (jsvar (temp).assign (jsexpr (func).parens ().call ()));
+			js.open_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.RETURN)));
+			emit_control_flow_statement (ControlFlowStatement.RETURN);
+			js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.BREAK)));
+			emit_control_flow_statement (ControlFlowStatement.BREAK);
+			js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.CONTINUE)));
+			emit_control_flow_statement (ControlFlowStatement.CONTINUE);
 			js.close ();
 		}
 	}
@@ -570,8 +576,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			} else if (has_out_parameters) {
 				js.stmt (jsmember ("result").assign (result));
 			}
-			js.stmt (jsmember ("result").keyword ("return"));
+			emit_control_flow_statement (ControlFlowStatement.RETURN);
 		}
+	}
+
+	public override void visit_break_statement (BreakStatement stmt) {
+		emit_control_flow_statement (ControlFlowStatement.BREAK);
+	}
+
+	public override void visit_continue_statement (ContinueStatement stmt) {
+		emit_control_flow_statement (ControlFlowStatement.CONTINUE);
 	}
 
 	public override void visit_member_access (MemberAccess ma) {
@@ -665,25 +679,36 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jscode = jsmember (cl.get_full_name ());
 		if (expr.symbol_reference != cl.default_construction_method)
 			jscode.member (expr.symbol_reference.name);
-		jscode = emit_method_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), null, expr);
+		jscode = emit_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), null, expr);
 		set_jsvalue (expr, jscode.keyword ("new"));
 	}
 
 	public override void visit_assignment (Assignment expr) {
 		expr.left.emit (this);
 		expr.right.emit (this);
+		var ma = expr.left as MemberAccess;
+		if (ma != null) {
+			var prop = ma.symbol_reference as Property;
+			if (prop != null) {
+				set_jsvalue (expr, jsexpr(get_jsvalue (ma.inner)).member ("set_"+prop.name).call (get_jsvalue (expr.right)));
+				return;
+			}
+		}
 		set_jsvalue (expr, jsexpr(get_jsvalue (expr.left)).assign (get_jsvalue (expr.right)));
 	}
 
 	public override void visit_method_call (MethodCall expr) {
-		Method m;
-		if (expr.call.symbol_reference is Class)
-			m = ((Class) expr.call.symbol_reference).default_construction_method;
-		else
-			m = (Method) expr.call.symbol_reference;
+		CodeNode callable;
+		if (expr.call.symbol_reference is Class) {
+			callable = ((Class) expr.call.symbol_reference).default_construction_method;
+		} else if (expr.call.value_type is DelegateType) {
+			callable = ((DelegateType) expr.call.value_type).delegate_symbol;
+		} else {
+			callable = (Method) expr.call.symbol_reference;
+		}
 
 		bool has_out_parameters;
-		var jscode = emit_method_call (m, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
+		var jscode = emit_call (callable, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
 		if (!(expr.parent_node is ExpressionStatement && has_out_parameters))
 			set_jsvalue (expr, jscode);
 	}
@@ -873,18 +898,35 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jsmaja().member("bind").call (jslist().add (scope ?? jsmember ("this")).add (func));
 	}
 
+	public JSExpressionBuilder jsinteger (int value) {
+		return jstext ("%d".printf (value));
+	}
+
 	public JSExpressionBuilder jsstring (string value) {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSExpressionBuilder? emit_method_call (Method m, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null) {
-		var has_result = !(m.return_type is VoidType) || m is CreationMethod;
+	public JSExpressionBuilder? emit_call (CodeNode callable, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null) {
+		var m = callable as Method;
+		var d = callable as Delegate;
+		bool has_result;
+		if (m != null) {
+			has_result = !(m.return_type is VoidType) || m is CreationMethod;
+		} else {
+			has_result = !(d.return_type is VoidType);
+		}
 		Expression[] out_results = null;
 		has_out_results = false;
 		var jsargs = jslist ();
 
 		var arg_it = arguments.iterator ();
-		foreach (var param in m.get_parameters ()) {
+		Vala.List<Vala.Parameter> parameters;
+		if (m != null) {
+			parameters = m.get_parameters ();
+		} else {
+			parameters = d.get_parameters ();
+		}
+		foreach (var param in parameters) {
 			if (!arg_it.next ())
 				break;
 			if (param.direction != ParameterDirection.IN) {
@@ -920,6 +962,26 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			jscode = jscall;
 		}
 		return jscode;
+	}
+
+	public void emit_control_flow_statement (ControlFlowStatement control) {
+		if (current_closure_block != null) {
+			js.stmt (jsinteger (control).keyword ("return"));
+		} else {
+			switch (control) {
+			case ControlFlowStatement.RETURN:
+				js.stmt (jsmember ("result").keyword ("return"));
+				break;
+			case ControlFlowStatement.BREAK:
+				js.stmt (jstext ("break"));
+				break;
+			case ControlFlowStatement.CONTINUE:
+				js.stmt (jstext ("continue"));
+				break;
+			default:
+				assert_not_reached ();
+			}
+		}
 	}
 
 	public string get_temp_variable_name () {

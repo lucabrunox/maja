@@ -23,14 +23,23 @@
 
 public abstract class Maja.JSCode {
 	public bool no_semicolon = false;
+	public virtual bool needs_parens { get; set; default = false; }
 	public abstract void write (JSWriter writer);
 }
 
 public class Maja.JSExpressionBuilder : JSCode {
 	private JSCode current;
 
+	public override bool needs_parens { get { return current.needs_parens; } set { current.needs_parens = value; } }
+
 	public JSExpressionBuilder (JSCode? initial = null) {
 		this.current = initial;
+	}
+
+	public JSExpressionBuilder parens () {
+		current.needs_parens = true;
+		current = new JSOperation (current);
+		return this;
 	}
 
 	public JSExpressionBuilder array () {
@@ -191,10 +200,9 @@ public class Maja.JSOperation : JSCode {
 	public JSCode left;
 	public JSCode right;
 	public string operation;
-	public bool needs_parens;
 	public bool is_postfix;
 
-	public JSOperation (JSCode left, string operation, JSCode? right = null, bool needs_parens = false, bool is_postfix = false) {
+	public JSOperation (JSCode left, string? operation = null, JSCode? right = null, bool needs_parens = false, bool is_postfix = false) {
 		this.left = left;
 		this.operation = operation;
 		this.right = right;
@@ -203,29 +211,27 @@ public class Maja.JSOperation : JSCode {
 	}
 
 	public override void write (JSWriter writer) {
-		var left_parens = left is JSOperation && ((JSOperation)left).needs_parens;
-		var right_parens = right is JSOperation && ((JSOperation)left).needs_parens;
 		if (right == null) {
-			if (!is_postfix)
+			if (!is_postfix && operation != null)
 				writer.write_string (operation);
-			if (left_parens)
+			if (left.needs_parens)
 				writer.write_string ("(");
 			left.write (writer);
-			if (right_parens)
+			if (left.needs_parens)
 				writer.write_string (")");
-			if (is_postfix)
+			if (is_postfix && operation != null)
 				writer.write_string (operation);
 		} else {
-			if (left_parens)
+			if (left.needs_parens)
 				writer.write_string ("(");
 			left.write (writer);
-			if (left_parens)
+			if (left.needs_parens)
 				writer.write_string (")");
 			writer.write_string (operation);
-			if (right_parens)
+			if (right.needs_parens)
 				writer.write_string ("(");
 			right.write (writer);
-			if (right_parens)
+			if (right.needs_parens)
 				writer.write_string (")");
 		}
 	}
@@ -269,6 +275,10 @@ public class Maja.JSBlockBuilder : JSCode {
 		current = new JSBlock (current, "if", condition);
 	}
 
+	public void add_else_if (JSCode condition) {
+		current = new JSBlock (current.parent, "else if", condition);
+	}
+
 	public void add_else () {
 		current = new JSBlock (current.parent, "else");
 	}
@@ -291,10 +301,6 @@ public class Maja.JSBlockBuilder : JSCode {
 
 	public void close () {
 		current = current.parent;
-	}
-
-	public void open_block () {
-		current = new JSBlock (current, "function", new JSList (), true);
 	}
 
 	public override void write (JSWriter writer) {
@@ -323,9 +329,8 @@ public class Maja.JSBlock : JSCode {
 	public Gee.LinkedList<JSCode> statements = new Gee.LinkedList<JSCode> ();
 	public string keyword;
 	public JSCode expr;
-	public bool call_function;
 
-	public JSBlock (JSBlock? parent = null, string? keyword = null, JSCode? expr = null, bool call_function = false) {
+	public JSBlock (JSBlock? parent = null, string? keyword = null, JSCode? expr = null) {
 		if (parent != null) {
 			this.parent = parent;
 			parent.statements.add (this);
@@ -333,7 +338,6 @@ public class Maja.JSBlock : JSCode {
 		this.no_semicolon = true;
 		this.keyword = keyword;
 		this.expr = expr;
-		this.call_function = call_function;
 	}
 
 	public override void write (JSWriter writer) {
@@ -354,10 +358,9 @@ public class Maja.JSBlock : JSCode {
 				writer.write_string (";");
 			writer.write_newline ();
 		}
-		if (keyword != null)
+		if (keyword != null) {
 			writer.write_end_block ();
-		if (call_function)
-			writer.write_string ("();");
+		}
 	}
 }
 
