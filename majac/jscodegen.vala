@@ -180,12 +180,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public EmitContext namespace_decl_context;
-	public EmitContext constructor_decl_context;
 	public EmitContext decl_context;
 	public EmitContext base_init_context;
 
 	public JSBlockBuilder js { get { return emit_context.js; } }
 
+	/* contains all the declared symbols */
+	Set<Symbol> declared_symbols = new HashSet<Symbol> ();
 	/* (constant) hash table with all reserved identifiers in the generated code */
 	Set<string> reserved_identifiers = new HashSet<string> (str_hash, str_equal);
 	/* (constant) set with full name of dova -> javascript mappings */
@@ -242,14 +243,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_function (new JSBlockBuilder (jsblock));
 		pop_context ();
 
-		constructor_decl_context = new EmitContext ();
-		push_context (constructor_decl_context);
-		jsblock = new JSBlock ();
-		jsblock.no_semicolon = true;
-		jsfile.statements.add (jsblock);
-		push_function (new JSBlockBuilder (jsblock));
-		pop_context ();
-
 		decl_context = emit_context;
 		jsblock = new JSBlock ();
 		jsblock.no_semicolon = true;
@@ -295,10 +288,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		emit_context.js = emit_context.js_stack.peek_head ();
 	}
 
-	public bool add_symbol_declaration (CCodeFile decl_space, Symbol sym, string name) {
-		if (decl_space.add_declaration (name)) {
+	public bool add_symbol_declaration (Symbol sym) {
+		if (sym in declared_symbols) {
 			return true;
 		}
+		declared_symbols.add (sym);
+
 		if (sym.source_reference != null) {
 			sym.source_reference.file.used = true;
 		}
@@ -324,8 +319,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_class (Class cl) {
-		if (cl.external) {
+		if (add_symbol_declaration (cl)) {
 			return;
+		}
+
+		if (cl.base_class != null) {
+			cl.base_class.accept (this);
 		}
 
 		push_context (new EmitContext (cl));
@@ -1017,11 +1016,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (m.name != ".new") {
 			jscode.member (m.name);
 		}
-		if (m.name == ".new") {
-			push_context (constructor_decl_context);
-		} else {
-			push_context (decl_context);
-		}
+		push_context (decl_context);
 		js.stmt (jsexpr(jscode).assign (func));
 		if (m.name != ".new") {
 			js.stmt (jsexpr(jscode).member("prototype").assign (jsmember(current_type_symbol.get_full_name ()).member("prototype")));
