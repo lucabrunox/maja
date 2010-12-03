@@ -216,11 +216,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		reserved_identifiers.add ("error");
 
 		static_method_mapping["string.contains"] = "string.prototype.contains";
-		//static_method_mapping["any.to_string"] = "Dova.to_string";
-		//static_method_mapping["int.to_string"] = "Dova.to_string";
 
 		native_mapping["string.index_of"] = "indexOf";
-		native_mapping["string.toString"] = "toString";
+		native_mapping["string.to_string"] = "toString";
 		native_mapping["int.to_string"] = "toString";
 	}
 
