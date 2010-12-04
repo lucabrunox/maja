@@ -413,6 +413,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		if (param.direction == ParameterDirection.IN) {
 			var param_list = (JSList) js.current.expr;
+			param_list.add_string (param.name);
+			if (!param.variable_type.nullable) {
+				js.open_if (jsmember (param.name).equal (jsnull ()));
+				js.error (jsstring ("Unexpected null parameter '"+param.name+"'"));
+				js.close ();
+			}
+
+			/* SPECIAL SANITY CHECKS FOR LIBRARY USAGE
+			var param_list = (JSList) js.current.expr;
 			param_list.add_string ("param_"+param.name);
 			// initialize default
 			// declare local variable for parameter
@@ -432,6 +441,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				js.error (jsstring ("Undefined parameter '"+param.name+"'"));
 			}
 			js.close ();
+			*/
 		} else {
 			JSCode rhs = null;
 			if (param.initializer != null) {
@@ -961,6 +971,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				out_results += arg_it.get ();
 			} else {
 				jsargs.add (get_jsvalue (arg_it.get ()));
+				if (param.variable_type is DelegateType) {
+					var deleg = ((DelegateType) param.variable_type).delegate_symbol;
+					var javascript = deleg.get_attribute ("Javascript");
+					if (javascript != null && javascript.get_bool ("has_this_parameter")) {
+						jsargs.add (jsnull ());
+					}
+				}
 			}
 		}
 

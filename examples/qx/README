@@ -1,0 +1,19 @@
+1. Type `make' to generate the Javascript code from Vala
+2. Create a qooxdoo application.
+3. Copy maja-utils.js, dova-base-0.1.js and ValaApplication.js from one of the demos into APPLICATION/source/script/
+4. Put this setting into "source-all" of APPLICATION/config.json (order of scripts is important) as follows:
+"jobs" : {
+  "source-all" : {
+    "add-script" :
+      [ { "uri" : "script/maja-utils.js" },
+        { "uri" : "script/dova-base-0.1.js" },
+        { "uri" : "script/ValaApplication.js" } ]
+  }
+}
+
+5. Call Vala in the main() method of APPLICATION/source/class/APPLICATION/Application.js as follows and remove the sample code:
+vala_qx_main (this);
+
+6. Run your application!
+
+In the above steps APPLICATION is the name of your application.

@@ -5,6 +5,13 @@ namespace Javascript {
 	public List<any> arguments;
 	public DOM.Document document;
 
+	public class Event {
+	}
+
+	public delegate bool EventCallback (Event event);
+
+	public void alert (any object);
+
 	namespace DOM {
 		public class Document {
 			public Element createElement (string name);

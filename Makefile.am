@@ -3,6 +3,7 @@ NULL =
 SUBDIRS = \
 	majac \
 	tests \
+	examples \
 	$(NULL)
 
 pkgconfigdir = $(libdir)/pkgconfig

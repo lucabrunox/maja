@@ -65,5 +65,8 @@ AC_CHECK_HEADERS([stdlib.h string.h])
 AC_CONFIG_FILES([Makefile
                  majac/Makefile
                  tests/Makefile
+                 examples/Makefile
+                 examples/qx/Makefile
+                 examples/qx/helloworld/Makefile
                  maja-$MAJA_API_VERSION.pc])
 AC_OUTPUT
