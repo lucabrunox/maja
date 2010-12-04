@@ -156,6 +156,21 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return false;
 	}
 
+	bool is_in_loop (bool captured) {
+		var captured_block = current_closure_block;
+		var sym = current_symbol;
+		while (sym != null) {
+			if (!(sym is Block) || (captured && sym == captured_block)) {
+				break;
+			}
+			if (sym.parent_node is Loop) {
+				return true;
+			}
+			sym = sym.parent_symbol;
+		}
+		return false;
+	}
+
 	public Block? current_closure_block {
 		get {
 			return next_closure_block (current_symbol);
@@ -439,19 +454,24 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		foreach (var stmt in block.get_statements ()) {
 			stmt.emit (this);
 		}
-		emit_context.pop_symbol ();
 		if (block.captured) {
 			pop_function ();
 			var temp = get_temp_variable_name ();
 			js.stmt (jsvar (temp).assign (jsexpr (func).parens ().call ()));
+			// we are temporarly out of the captured block
+			block.captured = false;
 			js.open_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.RETURN)));
 			emit_control_flow_statement (ControlFlowStatement.RETURN);
-			js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.BREAK)));
-			emit_control_flow_statement (ControlFlowStatement.BREAK);
-			js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.CONTINUE)));
-			emit_control_flow_statement (ControlFlowStatement.CONTINUE);
+			if (is_in_loop (false)) {
+				js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.BREAK)));
+				emit_control_flow_statement (ControlFlowStatement.BREAK);
+				js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.CONTINUE)));
+				emit_control_flow_statement (ControlFlowStatement.CONTINUE);
+			}
+			block.captured = true;
 			js.close ();
 		}
+		emit_context.pop_symbol ();
 	}
 
 	public override void visit_declaration_statement (DeclarationStatement stmt) {
@@ -964,7 +984,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public void emit_control_flow_statement (ControlFlowStatement control) {
-		if (current_closure_block != null) {
+		if (current_closure_block != null && !is_in_loop (true)) {
 			js.stmt (jsinteger (control).keyword ("return"));
 		} else {
 			switch (control) {

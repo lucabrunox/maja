@@ -6,10 +6,11 @@ TESTS_ENVIRONMENT = $(JSBIN) -f $(top_srcdir)/majac/maja-utils.js -f $(top_build
 
 TESTS = \
 	blockcapture.js \
+	capturedloop.js \
 	$(NULL)
 
-CLEANFILES = \
-	blockcapture.js \
+CLEANFILES =
+	$(TESTS) \
 	$(NULL)
 
 .vala.js: $(top_builddir)/majac/majac
