@@ -412,15 +412,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		if (param.direction == ParameterDirection.IN) {
-			var param_list = (JSList) js.current.expr;
+			/* NON-SPECIAL SANITY CHECKS
+			  var param_list = (JSList) js.current.expr;
 			param_list.add_string (param.name);
+
 			if (!param.variable_type.nullable) {
 				js.open_if (jsmember (param.name).equal (jsnull ()));
 				js.error (jsstring ("Unexpected null parameter '"+param.name+"'"));
 				js.close ();
-			}
+				}*/
 
-			/* SPECIAL SANITY CHECKS FOR LIBRARY USAGE
 			var param_list = (JSList) js.current.expr;
 			param_list.add_string ("param_"+param.name);
 			// initialize default
@@ -441,7 +442,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				js.error (jsstring ("Undefined parameter '"+param.name+"'"));
 			}
 			js.close ();
-			*/
 		} else {
 			JSCode rhs = null;
 			if (param.initializer != null) {
@@ -727,6 +727,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
+		if (expr.call.symbol_reference.get_full_name () == "string.equals") {
+			var arguments = expr.get_argument_list ();
+			set_jsvalue (expr, jsexpr (get_jsvalue (arguments[0])).equal (get_jsvalue (arguments[1])));
+			return;
+		}
+
 		CodeNode callable;
 		if (expr.call.symbol_reference is Class) {
 			callable = ((Class) expr.call.symbol_reference).default_construction_method;
@@ -738,8 +744,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		bool has_out_parameters;
 		var jscode = emit_call (callable, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
-		if (!(expr.parent_node is ExpressionStatement && has_out_parameters))
+		if (!(expr.parent_node is ExpressionStatement && has_out_parameters)) {
 			set_jsvalue (expr, jscode);
+		}
 	}
 
 	public override void visit_base_access (BaseAccess expr) {

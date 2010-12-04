@@ -6,6 +6,7 @@ namespace qx {
 		}
 		namespace container {
 			public class Composite : core.Widget {
+				public Composite ();
 				public void add (core.LayoutItem child, Dova.Map<string,any>? options = null);
 			}
 		}
