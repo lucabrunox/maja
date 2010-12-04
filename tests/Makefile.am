@@ -9,7 +9,7 @@ TESTS = \
 	capturedloop.js \
 	$(NULL)
 
-CLEANFILES =
+CLEANFILES = \
 	$(TESTS) \
 	$(NULL)
 

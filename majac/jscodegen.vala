@@ -468,8 +468,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.CONTINUE)));
 				emit_control_flow_statement (ControlFlowStatement.CONTINUE);
 			}
-			block.captured = true;
 			js.close ();
+			block.captured = true;
 		}
 		emit_context.pop_symbol ();
 	}
@@ -843,17 +843,19 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 					break;
 				}
 			}
-			if (!return_found)
+			if (!return_found) {
 				m.body.add_statement (new ReturnStatement ());
+			}
 		}
 
 		var func = jsfunction ();
 		push_function (func);
 		if (m.is_abstract) {
-			js.error (jsstring ("Abstract method '%s' not implemented".printf (m.get_full_name())));
+			js.error (jsstring ("Abstract method '%s' not implemented".printf (m.get_full_name ())));
 		} else {
 			m.accept_children (this);
 		}
+
 		pop_context ();
 
 		return func;

@@ -22,6 +22,7 @@ majac_CFLAGS = \
 	$(NULL)
 
 majac_VALAFLAGS = \
+	-g \
 	--vapidir $(top_srcdir)/majac \
 	--pkg config \
 	--pkg gee-1.0 \
