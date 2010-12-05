@@ -1,3 +1,4 @@
+[Javascript (camelcase = true)]
 namespace qx {
 	namespace ui {
 		namespace basic {
@@ -24,6 +25,16 @@ namespace qx {
 				public string addListener (string type, [Javascript (has_this_parameter = true)] Javascript.EventCallback listener, bool capture = false);
 			}
 			public class Widget : LayoutItem {
+				public void setLayout (layout.Abstract layout);
+			}
+		}
+		namespace layout {
+			public class Abstract {
+			}
+			public class VBox : Abstract {
+				public string separator { get; set; }
+
+				public VBox (int spacing = 0, string align_y = "top", string? separator = null);
 			}
 		}
 	}

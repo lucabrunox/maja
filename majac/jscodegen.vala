@@ -645,8 +645,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 					member_name = native_name;
 				}
 				jscode = jsexpr (get_jsvalue (ma.inner));
-				if (ma.symbol_reference is Property && !is_simple_field (ma.symbol_reference)) {
-					jscode.member ("get_"+member_name).call ();
+				var prop = ma.symbol_reference as Property;
+				if (prop != null && !is_simple_field (prop)) {
+					jscode.member (get_symbol_jsname (prop, "get_"+member_name)).call ();
 				} else {
 					jscode.member (member_name);
 				}
@@ -730,7 +731,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (ma != null) {
 			var prop = ma.symbol_reference as Property;
 			if (prop != null && !is_simple_field (prop)) {
-				set_jsvalue (expr, jsexpr(get_jsvalue (ma.inner)).member ("set_"+prop.name).call (get_jsvalue (expr.right)));
+				set_jsvalue (expr, jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name)).call (get_jsvalue (expr.right)));
 				return;
 			}
 		}
@@ -1042,6 +1043,28 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public string get_temp_variable_name () {
 		return "_tmp%d_".printf (next_temp_var_id++);
+	}
+
+	public bool is_camelcase (Symbol sym) {
+		var cur = sym;
+		while (cur != null) {
+			var javascript = sym.get_attribute ("Javascript");
+			if (javascript != null && javascript.get_bool ("camelcase")) {
+				return true;
+			}
+			cur = cur.parent_symbol;
+		}
+		return false;
+	}
+
+	public string get_symbol_jsname (Symbol sym, string? name = null) {
+		if (name == null) {
+			name = sym.name;
+		}
+		if (is_camelcase (sym)) {
+			return Symbol.lower_case_to_camel_case (name);
+		}
+		return name;
 	}
 
 	public string get_variable_jsname (string name) {
