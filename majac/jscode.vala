@@ -128,7 +128,7 @@ public class Maja.JSExpressionBuilder : JSCode {
 	}
 
 	public JSExpressionBuilder inequal (JSCode code) {
-		current = new JSOperation (current, " != ", code, true);
+		current = new JSOperation (current, " !== ", code, true);
 		return this;
 	}
 

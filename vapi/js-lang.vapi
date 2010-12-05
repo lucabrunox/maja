@@ -7,13 +7,20 @@ namespace Javascript {
 	public Navigator navigator;
 	public Window window;
 
+	public string encodeURIComponent (string component);
+
 	public class Event {
 	}
 
 	public delegate void Callback ();
-	public delegate bool EventCallback (Event event);
+	public delegate bool EventCallback (Event? event);
 
 	public void alert (any object);
+
+	public class RegExp {
+		public RegExp (string pattern, string modifiers);
+		public bool test (string str);
+	}
 
 	public class Navigator {
 		public string userAgent;
@@ -21,6 +28,7 @@ namespace Javascript {
 
 	public class Window {
 		public int setTimeout (Callback callback, int interval);
+		public void open (string url, string mode);
 	}
 
 	namespace DOM {

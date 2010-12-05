@@ -209,12 +209,8 @@ public class string : Dova.Value {
 
 	// to_upper is hardcoded as toUpperCase
 
-	// replace() is
-	public string replace (string old, string replacement) {
-		assert (old.length > 0);
-
-		return replacement.join (this.split (old));
-	}
+	// replace() is native
+	public extern string replace (string old, string replacement);
 }
 
 public class Dova.List<T> : Object {
