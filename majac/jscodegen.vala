@@ -359,7 +359,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		generate_construction_method (cl, cl.default_construction_method as CreationMethod);
 		if (cl.base_class != null) {
 			push_context (decl_context);
-			js.stmt (jsmaja().member("mixin").call (jslist().add (jsmember(cl.get_full_name()).member("prototype")).add (jsmember(cl.base_class.get_full_name()).member("prototype"))));
+			js.stmt (jsmaja().member("inherit").call (jslist().add (jsmember(cl.get_full_name())).add (jsmember(cl.base_class.get_full_name()))));
 			pop_context ();
 		}
 
