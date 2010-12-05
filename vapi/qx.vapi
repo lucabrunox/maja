@@ -22,17 +22,17 @@ namespace qx {
 		}
 		namespace core {
 			public class LayoutItem {
-				public string addListener (string type, [Javascript (has_this_parameter = true)] Javascript.EventCallback listener, bool capture = false);
+				public string add_listener (string type, [Javascript (has_this_parameter = true)] Javascript.EventCallback listener, bool capture = false);
 			}
 			public class Widget : LayoutItem {
-				public void setLayout (layout.Abstract layout);
+				public layout.Abstract layout;
 			}
 		}
 		namespace layout {
 			public class Abstract {
 			}
 			public class VBox : Abstract {
-				public string separator { get; set; }
+				public string separator;
 
 				public VBox (int spacing = 0, string align_y = "top", string? separator = null);
 			}

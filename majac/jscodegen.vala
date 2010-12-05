@@ -1045,10 +1045,22 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return "_tmp%d_".printf (next_temp_var_id++);
 	}
 
-	public bool is_camelcase (Symbol sym) {
+	public bool first_capital_naming (Symbol sym) {
 		var cur = sym;
 		while (cur != null) {
-			var javascript = sym.get_attribute ("Javascript");
+			var javascript = cur.get_attribute ("Javascript");
+			if (javascript != null && javascript.get_bool ("first_capital")) {
+				return true;
+			}
+			cur = cur.parent_symbol;
+		}
+		return false;
+	}
+
+	public bool camelcase_naming (Symbol sym) {
+		var cur = sym;
+		while (cur != null) {
+			var javascript = cur.get_attribute ("Javascript");
 			if (javascript != null && javascript.get_bool ("camelcase")) {
 				return true;
 			}
@@ -1057,12 +1069,39 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return false;
 	}
 
+	/* copied from Vala.Symbol.lower_case_to_camel_case */
+	public static string lower_case_to_camel_case (string lower_case, bool first_capital) {
+		var result_builder = new StringBuilder ("");
+
+		weak string i = lower_case;
+
+		bool last_underscore = first_capital;
+		while (i.length > 0) {
+			unichar c = i.get_char ();
+			if (c == '_') {
+				last_underscore = true;
+			} else if (c.isupper ()) {
+				// original string is not lower_case, don't apply transformation
+				return lower_case;
+			} else if (last_underscore) {
+				result_builder.append_unichar (c.toupper ());
+				last_underscore = false;
+			} else {
+				result_builder.append_unichar (c);
+			}
+			
+			i = i.next_char ();
+		}
+
+		return result_builder.str;
+	}
+
 	public string get_symbol_jsname (Symbol sym, string? name = null) {
 		if (name == null) {
 			name = sym.name;
 		}
-		if (is_camelcase (sym)) {
-			return Symbol.lower_case_to_camel_case (name);
+		if (camelcase_naming (sym)) {
+			return lower_case_to_camel_case (name, first_capital_naming (sym));
 		}
 		return name;
 	}

@@ -12,7 +12,7 @@ public void vala_qx_main (qx.application.Standalone app) {
 	doc.add(button1, {"left": 100, "top": 50});
 
 	// Add an event listener
-	button1.addListener("execute", (e) => {
+	button1.add_listener("execute", (e) => {
 			alert("Hello World!");
 			return false;
 		});
