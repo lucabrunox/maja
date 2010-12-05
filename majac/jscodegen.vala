@@ -731,7 +731,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (ma != null) {
 			var prop = ma.symbol_reference as Property;
 			if (prop != null && !is_simple_field (prop)) {
-				set_jsvalue (expr, jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name)).call (get_jsvalue (expr.right)));
+				var set_expr = jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name));
+				if (!(expr.parent_node is ExpressionStatement)) {
+					var temp = get_temp_variable_name ();
+					js.stmt (jsvar(temp).assign (get_jsvalue (expr.right)));
+					js.stmt (jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name)).call (jsmember (temp)));
+					set_jsvalue (expr, jsmember (temp));
+				} else {
+					set_jsvalue (expr, set_expr.call (get_jsvalue (expr.right)));
+				}
 				return;
 			}
 		}
