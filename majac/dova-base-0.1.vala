@@ -126,6 +126,7 @@ public class string : Dova.Value {
 	// FIXME: length is not in bytes
 	// hardcoded in maja
 	// FIXME: Vala must allow get only for extern
+
 	public extern int length { get; private set; }
 
 	// slice is in javascript
@@ -217,6 +218,7 @@ public class string : Dova.Value {
 }
 
 public class Dova.List<T> : Object {
+	[SimpleField]
 	public extern int length { get; private set; }
 	public extern T get (int index);
 }

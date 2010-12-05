@@ -171,6 +171,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return false;
 	}
 
+	bool is_simple_field (Symbol sym) {
+		if (sym.get_full_name () in simple_fields) {
+			return true;
+		}
+		return sym.get_attribute ("SimpleField") != null;
+	}
+
 	public Block? current_closure_block {
 		get {
 			return next_closure_block (current_symbol);
@@ -204,6 +211,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	Set<Symbol> declared_symbols = new HashSet<Symbol> ();
 	/* (constant) hash table with all reserved identifiers in the generated code */
 	Set<string> reserved_identifiers = new HashSet<string> (str_hash, str_equal);
+	/* (constant) set with full name of simple fields */
+	Set<string> simple_fields = new HashSet<string> (str_hash, str_equal);
 	/* (constant) set with full name of dova -> javascript mappings */
 	Map<string,string> static_method_mapping = new HashMap<string,string> (str_hash, str_equal);
 	/* (constant) set with full name of native javascript mappings */
@@ -235,6 +244,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		// reserved for Maja naming conventions
 		reserved_identifiers.add ("error");
+
+		simple_fields.add ("Dova.List.length");
 
 		static_method_mapping["string.contains"] = "string.prototype.contains";
 
@@ -634,7 +645,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 					member_name = native_name;
 				}
 				jscode = jsexpr (get_jsvalue (ma.inner));
-				if (ma.symbol_reference is Property) {
+				if (ma.symbol_reference is Property && !is_simple_field (ma.symbol_reference)) {
 					jscode.member ("get_"+member_name).call ();
 				} else {
 					jscode.member (member_name);
@@ -718,7 +729,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var ma = expr.left as MemberAccess;
 		if (ma != null) {
 			var prop = ma.symbol_reference as Property;
-			if (prop != null) {
+			if (prop != null && !is_simple_field (prop)) {
 				set_jsvalue (expr, jsexpr(get_jsvalue (ma.inner)).member ("set_"+prop.name).call (get_jsvalue (expr.right)));
 				return;
 			}
