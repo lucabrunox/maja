@@ -29,7 +29,10 @@ majac_VALAFLAGS = \
 	--pkg $(VALA_PACKAGE) \
 	$(NULL)
 
-all-local: dova-base-0.1.js
+all-local: dova-base-0.1.js dova-model-0.1.js
 
 dova-base-0.1.js: dova-base-0.1.vala majac
-	$(builddir)/majac --vapidir $(top_srcdir)/dova-vapi --nostdpkg $<
+	$(builddir)/majac --nostdpkg $<
+
+dova-model-0.1.js: dova-model-0.1.vala majac
+	$(builddir)/majac --vapidir $(top_srcdir)/dova-vapi --vapidir $(top_srcdir)/vapi --pkg dova-base-0.1 $<
