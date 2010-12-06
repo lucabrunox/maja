@@ -229,16 +229,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public DataType string_type;
 	public DataType object_type;
 
-	const AttributeMap[] hardcoded_attributes = {
+	const AttributeMap[] dova_attributes = {
 		// dova-base
-		{"any.to_string", "name", "toString"},
+		{"any.to_string", "name", "\"toString\""},
 		{"string.contains", "static", "true"},
-		{"string.index_of", "name", "indexOf"},
+		{"string.index_of", "name", "\"indexOf\""},
 		{"List.length", "simple_field", "true"},
 		// dova-model
-		{"Dova.ListModel", "native_array", "true"},
-		{"Dova.ListModel.length", "simple_field", "true"},
-		{"Dova.ListModel.append", "name", "push"}};
+		{"ListModel", "native_array", "true"},
+		{"ListModel.length", "simple_field", "true"},
+		{"ListModel.append", "name", "\"push\""}};
 
 	public JSCodeGenerator () {
         // TODO:
@@ -258,8 +258,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var dova_ns = root_symbol.scope.lookup ("Dova") as Namespace;
 
 		if (dova_ns != null) {
-			// hardcode attributes manually until dova supports javascript on vapi generation
-			foreach (var attribute_map in hardcoded_attributes) {
+			// manually hardcode attributes until dova supports javascript on vapi generation
+			foreach (var attribute_map in dova_attributes) {
 				Symbol sym = dova_ns;
 				var unresolved = attribute_map.symbol.split (".");
 				foreach (var name in unresolved) {
@@ -1159,7 +1159,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (get_javascript_bool (sym, "camelcase")) {
 			return lower_case_to_camel_case (name, get_javascript_bool (sym, "first_capital"));
 		}
-		return name;
+		return get_variable_jsname (name);
 	}
 
 	public string get_variable_jsname (string name) {
