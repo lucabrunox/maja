@@ -9,7 +9,7 @@ namespace Dova {
 		[Javascript (native = "push")]
 		public extern override void append (T element);
 		public override void clear () {
-			((dynamic Object) this).splice (0, (int) length);
+			((dynamic Object) this).splice (0, length);
 		}
 		public override bool contains (T element) {
 			foreach (var elem in this) {

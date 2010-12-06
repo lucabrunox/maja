@@ -986,7 +986,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		} else {
 			parameters = d.get_parameters ();
 		}
+		bool ellipsis = false;
 		foreach (var param in parameters) {
+			if (param.ellipsis) {
+				ellipsis = true;
+				break;
+			}
 			if (!arg_it.next ())
 				break;
 			if (param.direction != ParameterDirection.IN) {
@@ -1007,6 +1012,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 						jsargs.add (jsnull ());
 					}
 				}
+			}
+		}
+		if (ellipsis) {
+			while (arg_it.next ()) {
+				jsargs.add (get_jsvalue (arg_it.get ()));
 			}
 		}
 
