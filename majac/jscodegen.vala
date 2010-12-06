@@ -338,7 +338,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		push_context (namespace_decl_context);
-		js.stmt (jsmember(ns.get_full_name ()).assign (jsobject ()));
+		js.stmt (jsvar (ns.get_full_name ()));
+		js.open_if (jsmember (ns.get_full_name ()).equal (jsundefined ()));
+		js.stmt (jsmember (ns.get_full_name ()).assign (jsobject ()));
+		js.close ();
 		pop_context ();
 
 		ns.accept_children (this);
