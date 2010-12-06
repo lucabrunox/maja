@@ -7,7 +7,6 @@ namespace Dova {
 				}
 			}
 		}
-		[Javascript (native = "push")]
 		public extern override void append (T element);
 		public override void clear () {
 			((dynamic Object) this).splice (0, length);
@@ -20,7 +19,6 @@ namespace Dova {
 			}
 			return false;
 		}
-		[Javascript (getter = true)]
 		public extern override T get (int index);
 		//public override Dova.Iterator<T> iterator ();
 		public override bool remove (T element) {
@@ -33,9 +31,7 @@ namespace Dova {
 			return false;
 		}
 		public extern override Dova.Iterator<T> iterator ();
-		[Javascript (setter = true)]
 		public extern override void set (int index, T element);
-		[SimpleField]
 		public extern override int length { get; private set; }
 	}
 	[CCode (cheader_filename = "dova-model.h")]

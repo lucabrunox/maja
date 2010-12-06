@@ -214,7 +214,6 @@ public class string : Dova.Value {
 }
 
 public class Dova.List<T> : Object {
-	[SimpleField]
 	public extern int length { get; private set; }
 	public extern T get (int index);
 }

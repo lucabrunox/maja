@@ -175,7 +175,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (sym.get_full_name () in simple_fields) {
 			return true;
 		}
-		return sym.get_attribute ("SimpleField") != null;
+		var javascript = sym.get_attribute ("Javascript");
+		return javascript != null && javascript.get_bool ("simple_field");
 	}
 
 	public Block? current_closure_block {
@@ -252,6 +253,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		native_mapping["string.index_of"] = "indexOf";
 		native_mapping["string.to_string"] = "toString";
 		native_mapping["int.to_string"] = "toString";
+		native_mapping["Dova.ListModel.append"] = "push";
+		native_mapping["Dova.ArrayList.append"] = "push";
 	}
 
 	public override void emit (CodeContext context) {

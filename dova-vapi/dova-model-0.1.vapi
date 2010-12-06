@@ -120,7 +120,7 @@ namespace Dova {
 		public override void set (string value);
 	}
 	[CCode (cheader_filename = "dova-model.h")]
-	public delegate int CompareFunc<T> (T a, T b) throws Dova.Error;
+	public delegate int CompareFunc<T> (T a, T b);
 }
 [CCode (cprefix = "Debug", lower_case_cprefix = "debug_")]
 namespace Debug {
@@ -128,6 +128,6 @@ namespace Debug {
 	public static void assert (bool expression);
 }
 [CCode (cheader_filename = "dova-model.h")]
-public delegate bool FilterFunc<T> (T element) throws Dova.Error;
+public delegate bool FilterFunc<T> (T element);
 [CCode (cheader_filename = "dova-model.h")]
-public delegate R MapFunc<T,R> (T element) throws Dova.Error;
+public delegate R MapFunc<T,R> (T element);
