@@ -7,6 +7,9 @@ namespace qx {
 			}
 		}
 		public delegate void Callback (dynamic type.Event? e);
+		public class Timer {
+			public static Timer once ([Javascript (has_this_parameter = true)] Callback function, int timeout);
+		}
 	}
 	namespace core {
 		public class Setting {
