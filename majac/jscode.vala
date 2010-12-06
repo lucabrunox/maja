@@ -113,7 +113,7 @@ public class Maja.JSExpressionBuilder : JSCode {
 	}
 
 	public JSExpressionBuilder assign (JSCode code) {
-		current = new JSOperation (current, " = ", code);
+		current = new JSOperation (current, " = ", code, true);
 		return this;
 	}
 

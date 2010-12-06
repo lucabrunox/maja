@@ -238,6 +238,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		// dova-model
 		{"ListModel", "native_array", "true"},
 		{"ListModel.length", "simple_field", "true"},
+		{"ListModel.get", "getter", "true"},
+		{"ListModel.set", "setter", "true"},
 		{"ListModel.append", "name", "\"push\""}};
 
 	public JSCodeGenerator () {
@@ -780,6 +782,20 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
+		if (get_javascript_bool (expr.call.symbol_reference, "getter")) {
+			var arguments = expr.get_argument_list ();
+			var container = ((MemberAccess) expr.call).inner;
+			set_jsvalue (expr, jsexpr (get_jsvalue (container)).element_code (get_jsvalue (arguments[0])));
+			return;
+		}
+
+		if (get_javascript_bool (expr.call.symbol_reference, "setter")) {
+			var arguments = expr.get_argument_list ();
+			var container = ((MemberAccess) expr.call).inner;
+			set_jsvalue (expr, jsexpr (get_jsvalue (container)).element_code (get_jsvalue (arguments[0])).assign (get_jsvalue (arguments[1])));
+			return;
+		}
+
 		if (expr.call.symbol_reference.get_full_name () == "string.equals") {
 			var arguments = expr.get_argument_list ();
 			set_jsvalue (expr, jsexpr (get_jsvalue (arguments[0])).equal (get_jsvalue (arguments[1])));
