@@ -67,6 +67,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public CodeContext context { get; set; }
 
 	public Symbol root_symbol;
+	public Namespace javascript_ns;
 
 	public EmitContext emit_context = new EmitContext ();
 
@@ -221,13 +222,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public DataType void_type = new VoidType ();
-	public DataType bool_type;
-	public DataType char_type;
-	public DataType int_type;
-	public DataType uint_type;
-	public DataType double_type;
-	public DataType string_type;
-	public DataType object_type;
 
 	const AttributeMap[] dova_attributes = {
 		// dova-base
@@ -240,7 +234,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"ListModel.length", "simple_field", "true"},
 		{"ListModel.get", "getter", "true"},
 		{"ListModel.set", "setter", "true"},
-		{"ListModel.append", "name", "\"push\""}};
+		{"ListModel.iterator", "static", "true"},
+		{"ListModel.append", "name", "\"push\""},
+		{"SetModel.iterator", "static", "true"}};
 
 	public JSCodeGenerator () {
         // TODO:
@@ -258,6 +254,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		root_symbol = context.root;
 
 		var dova_ns = root_symbol.scope.lookup ("Dova") as Namespace;
+		javascript_ns = root_symbol.scope.lookup ("Javascript") as Namespace;
 
 		if (dova_ns != null) {
 			// manually hardcode attributes until dova supports javascript on vapi generation
@@ -300,7 +297,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		jsfile.statements.add (jsblock);
 		push_function (new JSBlockBuilder (jsblock));
 
-		context.root.accept_children (this);
+		root_symbol.accept_children (this);
 
 		if (context.entry_point != null) {
 			jsfile.statements.add (jsmember (context.entry_point.get_full_name ()).call ());
@@ -663,10 +660,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (ma.inner != null || ma.member_name != "this") {
 			member_name = get_symbol_jsname (ma.symbol_reference);
 		}
-		if (ma.inner != null) {
+		if (ma.inner != null && ma.inner.symbol_reference != javascript_ns) {
 			jscode = jsexpr (get_jsvalue (ma.inner));
 			if (get_javascript_bool (ma.symbol_reference, "static")) {
-				jscode = jsbind (jscode.member (member_name), get_jsvalue (ma.inner));
+				jscode = jsbind (jsmember (get_symbol_full_jsname (ma.symbol_reference)), get_jsvalue (ma.inner));
 			} else {
 				var prop = ma.symbol_reference as Property;
 				if (prop != null && !get_javascript_bool (prop, "simple_field")) {
@@ -915,6 +912,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_cast_expression (CastExpression expr) {
 		set_jsvalue (expr, get_jsvalue (expr.inner));
+	}
+
+	public override void visit_type_check (TypeCheck expr) {
+		set_jsvalue (expr, jsexpr (get_jsvalue (expr.expression)).instanceof (jsmember (get_symbol_full_jsname (expr.type_reference.data_type))));
 	}
 
 	public JSCode generate_method (Method m) {
@@ -1201,6 +1202,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			return lower_case_to_camel_case (name, get_javascript_bool (sym, "first_capital", true));
 		}
 		return get_variable_jsname (name);
+	}
+
+	public string get_symbol_full_jsname (Symbol sym) {
+		var name = get_symbol_jsname (sym);
+		if (sym.parent_symbol != null && sym.parent_symbol != javascript_ns && sym.parent_symbol != root_symbol) {
+			name = "%s.%s".printf (get_symbol_full_jsname (sym.parent_symbol), name);
+		}
+		return name;
 	}
 
 	public string get_variable_jsname (string name) {

@@ -170,6 +170,11 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder instanceof (JSCode code) {
+		current = new JSOperation (current, " instanceof ", code, true);
+		return this;
+	}
+
 	public JSExpressionBuilder negate () {
 		current = new JSOperation (current, "!");
 		return this;

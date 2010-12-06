@@ -9,6 +9,12 @@ namespace Javascript {
 
 	public string encodeURIComponent (string component);
 
+	public class Object {
+	}
+
+	public class Array : Object {
+	}
+
 	public class Event {
 	}
 

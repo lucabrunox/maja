@@ -20,7 +20,7 @@ namespace Dova {
 			return false;
 		}
 		public extern override T get (int index);
-		//public override Dova.Iterator<T> iterator ();
+		public extern override Dova.Iterator<T> iterator ();
 		public override bool remove (T element) {
 			for (var i=0; i < length; i++) {
 				if (this[i] == element) {
@@ -30,7 +30,6 @@ namespace Dova {
 			}
 			return false;
 		}
-		public extern override Dova.Iterator<T> iterator ();
 		public extern override void set (int index, T element);
 		public extern override int length { get; private set; }
 	}
@@ -82,7 +81,15 @@ namespace Dova {
 		public bool any (FilterFunc<T> func);
 		public Dova.Iterable<T> drop (int n);
 		public Dova.Iterable<T> filter (FilterFunc<T> func);*/
-		public abstract Dova.Iterator<T> iterator ();
+		public virtual Dova.Iterator<T> iterator () {
+			if (this is Javascript.Array) {
+				return ((ListModel<T>) this).iterator ();
+			} else if (this is Javascript.Object) {
+				return ((SetModel<T>) this).iterator ();
+			} else {
+				assert_not_reached ();
+			}
+		}
 		/*public Dova.Iterable<R> map<R> (MapFunc<T,R> func);
 		public Dova.Iterable<T> take (int n);
 		public Dova.List<T> to_list ();*/
@@ -96,6 +103,9 @@ namespace Dova {
 		public abstract T get (int index);
 		public abstract bool remove (T element);
 		public abstract void set (int index, T element);
+		public new Dova.Iterator<T> iterator () {
+			return null;
+		}
 		public abstract int length { get; private set; }
 	}
 	[CCode (cheader_filename = "dova-model.h")]
@@ -111,6 +121,9 @@ namespace Dova {
 		public abstract void clear ();
 		public abstract bool contains (T element);
 		public abstract bool remove (T element);
+		public new Dova.Iterator<T> iterator () {
+			return null;
+		}
 		public abstract int size { get; private set; }
 	}
 	[CCode (cheader_filename = "dova-model.h")]
