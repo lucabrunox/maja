@@ -693,7 +693,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (acc.writable && acc.value_parameter != null) {
 			acc.value_parameter.accept (this);
 		}
-		acc.body.emit (this);
+		if (acc.body != null) {
+			acc.body.emit (this);
+		}
 		pop_context ();
 
 		var name = acc.parent_symbol.name;
