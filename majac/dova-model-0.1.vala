@@ -75,20 +75,14 @@ namespace Dova {
 		public extern override bool contains (T element);
 		public extern override Dova.Iterator<T> iterator ();
 		[Javascript (delete = true)]
-		public override bool remove (T element);
-		public override int size { get; private set; }
+		public extern override bool remove (T element);
+		public extern override int size { get; private set; }
 	}
 	[CCode (cheader_filename = "dova-model.h")]
 	public abstract class IntegerModel : Dova.Object {
 		public IntegerModel ();
 		public abstract int get ();
 		public abstract void set (int value);
-	}
-	[CCode (cheader_filename = "dova-model.h")]
-	public class IntegerReference : Dova.IntegerModel {
-		public IntegerReference (int value);
-		public override int get ();
-		public override void set (int value);
 	}
 	[CCode (cheader_filename = "dova-model.h")]
 	public abstract class Iterable<T> : Dova.Object {
@@ -120,46 +114,16 @@ namespace Dova {
 		public abstract void set (K key, V value);
 	}
 	[CCode (cheader_filename = "dova-model.h")]
-	public class PriorityQueue<T> : Dova.QueueModel<T> {
-		public PriorityQueue (Dova.CompareFunc<T> comparer);
-		public override T pop ();
-		public override void push (T element);
-		public int length { get; private set; }
-	}
-	[CCode (cheader_filename = "dova-model.h")]
-	public abstract class QueueModel<T> : Dova.Object {
-		public QueueModel ();
-		public abstract T pop ();
-		public abstract void push (T element);
-	}
-	[CCode (cheader_filename = "dova-model.h")]
 	public abstract class SetModel<T> : Dova.Iterable<T> {
 		protected SetModel ();
 		public abstract bool add (T element);
 		public abstract void clear ();
 		public abstract bool contains (T element);
 		public abstract bool remove (T element);
-		public abstract int size { get; }
-	}
-	[CCode (cheader_filename = "dova-model.h")]
-	public abstract class StringModel : Dova.Object {
-		public StringModel ();
-		public abstract string get ();
-		public abstract void set (string value);
-	}
-	[CCode (cheader_filename = "dova-model.h")]
-	public class StringReference : Dova.StringModel {
-		public StringReference (string value);
-		public override string get ();
-		public override void set (string value);
+		public abstract int size { get; private set; }
 	}
 	[CCode (cheader_filename = "dova-model.h")]
 	public delegate int CompareFunc<T> (T a, T b);
-}
-[CCode (cprefix = "Debug", lower_case_cprefix = "debug_")]
-namespace Debug {
-	[CCode (cheader_filename = "dova-model.h")]
-	public static void assert (bool expression);
 }
 [CCode (cheader_filename = "dova-model.h")]
 public delegate bool FilterFunc<T> (T element);
