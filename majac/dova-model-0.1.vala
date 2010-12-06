@@ -1,9 +1,10 @@
 namespace Dova {
 	public class ArrayList<T> : Dova.ListModel<T> {
-		[Javascript (static = true)]
 		public ArrayList (Dova.List<T>? list = null) {
-			foreach (var elem in list) {
-				append (elem);
+			if (list != null) {
+				foreach (var elem in list) {
+					append (elem);
+				}
 			}
 		}
 		[Javascript (native = "push")]
