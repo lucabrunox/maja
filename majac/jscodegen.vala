@@ -658,7 +658,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		JSExpressionBuilder jscode = null;
 
 		var member_name = ma.member_name;
-		if (ma.member_name != "this") {
+		if (ma.inner != null || ma.member_name != "this") {
 			member_name = get_symbol_jsname (ma.symbol_reference);
 		}
 		if (ma.inner != null) {
@@ -743,8 +743,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var jscode = jsmember (cl.get_full_name ());
 		if (expr.symbol_reference != cl.default_construction_method)
 			jscode.member (expr.symbol_reference.name);
-		jscode = emit_call (expr.symbol_reference as CreationMethod, jscode, expr.get_argument_list (), null, expr);
-		set_jsvalue (expr, jscode.keyword ("new"));
+
+		if (get_javascript_bool (cl, "native_array")) {
+			var temp = get_temp_variable_name ();
+			js.stmt (jsvar (temp).assign (jslist (true)));
+			jscode = jsbind (jscode, jsmember (temp));
+			jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr);
+			js.stmt (jscode);
+			set_jsvalue (expr, jsmember (temp));
+		} else {
+			jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr).keyword ("new");
+			set_jsvalue (expr, jscode);
+		}
 	}
 
 	public override void visit_assignment (Assignment expr) {
@@ -1086,39 +1096,54 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return "_tmp%d_".printf (next_temp_var_id++);
 	}
 
-	public bool get_javascript_bool (Symbol sym, string argument, bool recursive = true) {
-		if (!recursive) {
+	public bool get_javascript_bool (Symbol sym, string argument, bool inherit_parent = false) {
+		var result = false;
+		if (!inherit_parent) {
 			var javascript = sym.get_attribute ("Javascript");
-			return javascript != null && javascript.get_bool (argument);
-		}
-		var cur = sym;
-		while (cur != null) {
-			var javascript = cur.get_attribute ("Javascript");
-			if (javascript != null && javascript.get_bool (argument)) {
-				return true;
+			if (javascript != null && javascript.has_argument (argument)) {
+				return javascript.get_bool (argument);
 			}
-			cur = cur.parent_symbol;
+			var cl = sym as Class;
+			if (cl != null && cl.base_class != null) {
+				result = get_javascript_bool (cl.base_class, argument, inherit_parent);
+			}
+		} else {
+			var cur = sym;
+			while (cur != null) {
+				var javascript = cur.get_attribute ("Javascript");
+				if (javascript != null && javascript.has_argument (argument)) {
+					result = javascript.get_bool (argument);
+					break;
+				}
+				cur = cur.parent_symbol;
+			}
 		}
-		return false;
+		return result;
 	}
 
-	public string? get_javascript_string (Symbol sym, string argument, bool recursive = false) {
-		if (!recursive) {
+	public string? get_javascript_string (Symbol sym, string argument, bool inherit_parent = false) {
+		string result = null;
+		if (!inherit_parent) {
 			var javascript = sym.get_attribute ("Javascript");
-			if (javascript != null) {
-				return javascript.get_string (argument);
-			}
-			return null;
-		}
-		var cur = sym;
-		while (cur != null) {
-			var javascript = cur.get_attribute ("Javascript");
 			if (javascript != null && javascript.has_argument (argument)) {
 				return javascript.get_string (argument);
 			}
-			cur = cur.parent_symbol;
+			var cl = sym as Class;
+			if (cl != null && cl.base_class != null) {
+				result = get_javascript_string (cl.base_class, argument, inherit_parent);
+			}
+		} else {
+			var cur = sym;
+			while (cur != null) {
+				var javascript = cur.get_attribute ("Javascript");
+				if (javascript != null && javascript.has_argument (argument)) {
+					result = javascript.get_string (argument);
+					break;
+				}
+				cur = cur.parent_symbol;
+			}
 		}
-		return null;
+		return result;
 	}
 
 	/* copied from Vala.Symbol.lower_case_to_camel_case */
@@ -1156,8 +1181,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			}
 			name = sym.name;
 		}
-		if (get_javascript_bool (sym, "camelcase")) {
-			return lower_case_to_camel_case (name, get_javascript_bool (sym, "first_capital"));
+		if (get_javascript_bool (sym, "camelcase", true)) {
+			return lower_case_to_camel_case (name, get_javascript_bool (sym, "first_capital", true));
 		}
 		return get_variable_jsname (name);
 	}
@@ -1180,7 +1205,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_context (new EmitContext (m));
 		var func = jsfunction ();
 		push_function (func);
-		if (!m.chain_up) {
+		if (!m.chain_up && !get_javascript_bool (cl, "native_array")) {
 			js.stmt (jsmember ("this._maja_init").call ());
 		}
 		m.accept_children (this);
