@@ -35,6 +35,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		CONTINUE
 	}
 
+	public struct AttributeMap {
+		public string symbol;
+		public string argument;
+		public string value;
+	}
+
 	public class EmitContext {
 		public Symbol? current_symbol;
 		public Gee.LinkedList<Symbol> symbol_stack = new Gee.LinkedList<Symbol> ();
@@ -171,14 +177,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return false;
 	}
 
-	bool is_simple_field (Symbol sym) {
-		if (sym.get_full_name () in simple_fields) {
-			return true;
-		}
-		var javascript = sym.get_attribute ("Javascript");
-		return javascript != null && javascript.get_bool ("simple_field");
-	}
-
 	public Block? current_closure_block {
 		get {
 			return next_closure_block (current_symbol);
@@ -212,12 +210,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	Set<Symbol> declared_symbols = new HashSet<Symbol> ();
 	/* (constant) hash table with all reserved identifiers in the generated code */
 	Set<string> reserved_identifiers = new HashSet<string> (str_hash, str_equal);
-	/* (constant) set with full name of simple fields */
-	Set<string> simple_fields = new HashSet<string> (str_hash, str_equal);
-	/* (constant) set with full name of dova -> javascript mappings */
-	Map<string,string> static_method_mapping = new HashMap<string,string> (str_hash, str_equal);
-	/* (constant) set with full name of native javascript mappings */
-	Map<string,string> native_mapping = new HashMap<string,string> (str_hash, str_equal);
 
 	public Gee.Map<string,string> variable_name_map {
 		get { return emit_context.variable_name_map; }
@@ -237,6 +229,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public DataType string_type;
 	public DataType object_type;
 
+	const AttributeMap[] hardcoded_attributes = {
+		// dova-base
+		{"any.to_string", "name", "toString"},
+		{"string.contains", "static", "true"},
+		{"string.index_of", "name", "indexOf"},
+		{"List.length", "simple_field", "true"},
+		// dova-model
+		{"Dova.ListModel", "native_array", "true"},
+		{"Dova.ListModel.length", "simple_field", "true"},
+		{"Dova.ListModel.append", "name", "push"}};
+
 	public JSCodeGenerator () {
         // TODO:
 		reserved_identifiers.add ("this");
@@ -245,22 +248,39 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		// reserved for Maja naming conventions
 		reserved_identifiers.add ("error");
-
-		simple_fields.add ("Dova.List.length");
-
-		static_method_mapping["string.contains"] = "string.prototype.contains";
-
-		native_mapping["string.index_of"] = "indexOf";
-		native_mapping["string.to_string"] = "toString";
-		native_mapping["int.to_string"] = "toString";
-		native_mapping["Dova.ListModel.append"] = "push";
-		native_mapping["Dova.ArrayList.append"] = "push";
 	}
 
 	public override void emit (CodeContext context) {
 		this.context = context;
 
 		root_symbol = context.root;
+
+		var dova_ns = root_symbol.scope.lookup ("Dova") as Namespace;
+
+		if (dova_ns != null) {
+			// hardcode attributes manually until dova supports javascript on vapi generation
+			foreach (var attribute_map in hardcoded_attributes) {
+				Symbol sym = dova_ns;
+				var unresolved = attribute_map.symbol.split (".");
+				foreach (var name in unresolved) {
+					sym = sym.scope.lookup (name);
+					if (sym == null) {
+						break;
+					}
+				}
+				if (sym == null) {
+					continue;
+				}
+				var javascript = sym.get_attribute ("Javascript");
+				if (javascript == null) {
+					javascript = new Attribute ("Javascript");
+					sym.attributes.append (javascript);
+				}
+				if (!javascript.has_argument (attribute_map.argument)) {
+					javascript.add_argument (attribute_map.argument, attribute_map.value);
+				}
+			}
+		}
 
 		var jsfile = new JSFile ();
 
@@ -639,20 +659,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		var member_name = ma.member_name;
 		if (ma.member_name != "this") {
-			member_name = get_variable_jsname (member_name);
+			member_name = get_symbol_jsname (ma.symbol_reference);
 		}
 		if (ma.inner != null) {
-			var static_method_name = static_method_mapping[ma.symbol_reference.get_full_name ()];
-			if (static_method_name != null) {
-				jscode = jsbind (jsmember (static_method_name), get_jsvalue (ma.inner));
+			jscode = jsexpr (get_jsvalue (ma.inner));
+			if (get_javascript_bool (ma.symbol_reference, "static")) {
+				jscode = jsbind (jscode.member (member_name), get_jsvalue (ma.inner));
 			} else {
-				var native_name = native_mapping[ma.symbol_reference.get_full_name ()];
-				if (native_name != null) {
-					member_name = native_name;
-				}
-				jscode = jsexpr (get_jsvalue (ma.inner));
 				var prop = ma.symbol_reference as Property;
-				if (prop != null && !is_simple_field (prop)) {
+				if (prop != null && !get_javascript_bool (prop, "simple_field")) {
 					jscode.member (get_symbol_jsname (prop, "get_"+member_name)).call ();
 				} else {
 					jscode.member (member_name);
@@ -738,7 +753,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var ma = expr.left as MemberAccess;
 		if (ma != null) {
 			var prop = ma.symbol_reference as Property;
-			if (prop != null && !is_simple_field (prop)) {
+			if (prop != null && !get_javascript_bool (prop, "simple_field")) {
 				var set_expr = jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name));
 				if (!(expr.parent_node is ExpressionStatement)) {
 					var temp = get_temp_variable_name ();
@@ -1071,11 +1086,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return "_tmp%d_".printf (next_temp_var_id++);
 	}
 
-	public bool first_capital_naming (Symbol sym) {
+	public bool get_javascript_bool (Symbol sym, string argument, bool recursive = true) {
+		if (!recursive) {
+			var javascript = sym.get_attribute ("Javascript");
+			return javascript != null && javascript.get_bool (argument);
+		}
 		var cur = sym;
 		while (cur != null) {
 			var javascript = cur.get_attribute ("Javascript");
-			if (javascript != null && javascript.get_bool ("first_capital")) {
+			if (javascript != null && javascript.get_bool (argument)) {
 				return true;
 			}
 			cur = cur.parent_symbol;
@@ -1083,16 +1102,23 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return false;
 	}
 
-	public bool camelcase_naming (Symbol sym) {
+	public string? get_javascript_string (Symbol sym, string argument, bool recursive = false) {
+		if (!recursive) {
+			var javascript = sym.get_attribute ("Javascript");
+			if (javascript != null) {
+				return javascript.get_string (argument);
+			}
+			return null;
+		}
 		var cur = sym;
 		while (cur != null) {
 			var javascript = cur.get_attribute ("Javascript");
-			if (javascript != null && javascript.get_bool ("camelcase")) {
-				return true;
+			if (javascript != null && javascript.has_argument (argument)) {
+				return javascript.get_string (argument);
 			}
 			cur = cur.parent_symbol;
 		}
-		return false;
+		return null;
 	}
 
 	/* copied from Vala.Symbol.lower_case_to_camel_case */
@@ -1124,10 +1150,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public string get_symbol_jsname (Symbol sym, string? name = null) {
 		if (name == null) {
+			var js_name = get_javascript_string (sym, "name");
+			if (js_name != null) {
+				return js_name;
+			}
 			name = sym.name;
 		}
-		if (camelcase_naming (sym)) {
-			return lower_case_to_camel_case (name, first_capital_naming (sym));
+		if (get_javascript_bool (sym, "camelcase")) {
+			return lower_case_to_camel_case (name, get_javascript_bool (sym, "first_capital"));
 		}
 		return name;
 	}

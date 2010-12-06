@@ -45,13 +45,9 @@ namespace Dova {
 	[CCode (cheader_filename = "dova-model.h")]
 	public class HashMap<K,V> : Dova.MapModel<K,V> {
 		public HashMap ();
-		[Javascript (contains = true)]
 		public extern bool contains_key (K key);
-		[Javascript (getter = true)]
 		public extern override V get (K key);
-		[Javascript (delete = true)]
 		public extern void remove (K key);
-		[Javascript (setter = true)]
 		public extern override void set (K key, V value);
 		public Dova.Iterable<K> keys { get; private set; }
 		public extern int size { get; private set; }
@@ -68,10 +64,8 @@ namespace Dova {
 			return true;
 		}
 		public extern override void clear ();
-		[Javascript (contains = true)]
 		public extern override bool contains (T element);
 		public extern override Dova.Iterator<T> iterator ();
-		[Javascript (delete = true)]
 		public extern override bool remove (T element);
 		public extern override int size { get; private set; }
 	}
