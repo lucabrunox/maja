@@ -2,7 +2,7 @@ using Dova;
 
 namespace Javascript {
 	/* Global javascript variables */
-	public List<any> arguments;
+	public any[] arguments;
 	public DOM.Document document;
 	public Navigator navigator;
 	public Window window;
@@ -10,6 +10,11 @@ namespace Javascript {
 	public string encodeURIComponent (string component);
 
 	public class Object {
+		[Javascript (contains = true)]
+		public bool contains (any key);
+		public new bool equals (any? other);
+		[Javascript (equals = true)]
+		public bool js_equals (any? other);
 	}
 
 	[Javascript (native_array = true)]
@@ -18,7 +23,7 @@ namespace Javascript {
 
 		public void push<T> (T element);
 		[Javascript (contains = true)]
-		public bool contains (T element);
+		public new bool contains (T element);
 		[Javascript (getter = true)]
 		public T get (int index);
 		[Javascript (setter = true)]

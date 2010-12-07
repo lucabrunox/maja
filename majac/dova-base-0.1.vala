@@ -1,6 +1,11 @@
 public abstract class any {
 	// allow nullable this
-	public abstract bool equals (any? other);
+	public virtual bool equals (any? other) {
+		if (!(this is Javascript.Object) || (!("equals" in ((Javascript.Object) this)))) {
+			return ((Javascript.Object) this).js_equals (other);
+		}
+		return ((Javascript.Object) this).equals (other);
+	}
 
 	// allow nullable this
 	public abstract string to_string ();
@@ -31,6 +36,10 @@ public class Dova.Error {
 
 	public Error (string message) {
 		this.message = message;
+	}
+
+	public string to_string () {
+		return message;
 	}
 }
 
@@ -108,7 +117,11 @@ public class Dova.Value : any {
 namespace Dova {
 	public void assert (bool condition, string? message = null) {
 		if (!condition) {
-			throw new Error ("assertion failed: " + message);
+			if (message != null) {
+				throw new Error ("assertion failed: " + message);
+			} else {
+				throw new Error ("assertion failed");
+			}
 		}
 	}
 

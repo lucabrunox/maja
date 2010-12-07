@@ -226,10 +226,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	const AttributeMap[] dova_attributes = {
 		// dova-base
 		{"any.to_string", "name", "\"toString\""},
+		{"any.equals", "static", "true"},
+		{"Dova.Error.to_string", "name", "\"toString\""},
 		{"string.contains", "static", "true"},
 		{"string.index_of", "name", "\"indexOf\""},
-		{"List.length", "simple_field", "true"}};
-
+		{"Dova.List.length", "simple_field", "true"}};
 
 	public JSCodeGenerator () {
         // TODO:
@@ -246,31 +247,28 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		root_symbol = context.root;
 
-		var dova_ns = root_symbol.scope.lookup ("Dova") as Namespace;
 		javascript_ns = root_symbol.scope.lookup ("Javascript") as Namespace;
 
-		if (dova_ns != null) {
-			// manually hardcode attributes until dova supports javascript on vapi generation
-			foreach (var attribute_map in dova_attributes) {
-				Symbol sym = dova_ns;
-				var unresolved = attribute_map.symbol.split (".");
-				foreach (var name in unresolved) {
-					sym = sym.scope.lookup (name);
-					if (sym == null) {
-						break;
-					}
-				}
+		// manually hardcode attributes until dova supports javascript on vapi generation
+		foreach (var attribute_map in dova_attributes) {
+			Symbol sym = root_symbol;
+			var unresolved = attribute_map.symbol.split (".");
+			foreach (var name in unresolved) {
+				sym = sym.scope.lookup (name);
 				if (sym == null) {
-					continue;
+					break;
 				}
-				var javascript = sym.get_attribute ("Javascript");
-				if (javascript == null) {
-					javascript = new Attribute ("Javascript");
-					sym.attributes.append (javascript);
-				}
-				if (!javascript.has_argument (attribute_map.argument)) {
-					javascript.add_argument (attribute_map.argument, attribute_map.value);
-				}
+			}
+			if (sym == null) {
+				continue;
+			}
+			var javascript = sym.get_attribute ("Javascript");
+			if (javascript == null) {
+				javascript = new Attribute ("Javascript");
+				sym.attributes.append (javascript);
+			}
+			if (!javascript.has_argument (attribute_map.argument)) {
+				javascript.add_argument (attribute_map.argument, attribute_map.value);
 			}
 		}
 
@@ -354,7 +352,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		push_context (namespace_decl_context);
 		js.stmt (jsvar (ns.get_full_name ()));
-		js.open_if (jsmember (ns.get_full_name ()).equal (jsundefined ()));
+		js.open_if (jsmember (ns.get_full_name ()).direct_equal (jsundefined ()));
 		js.stmt (jsmember (ns.get_full_name ()).assign (jsobject ()));
 		js.close ();
 		pop_context ();
@@ -409,12 +407,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		// declare function
 		var def = jsexpr ();
 		if (current_type_symbol != null) {
-			def.member (current_type_symbol.get_full_name ());
-			if (m.binding == MemberBinding.INSTANCE) {
+			def.member (get_symbol_full_jsname (current_type_symbol));
+			if (m.binding == MemberBinding.INSTANCE && !get_javascript_bool (m, "static")) {
 				def.member ("prototype");
 			}
 		}
-		def.member (m.name).assign (func);
+		def.member (get_symbol_jsname (m)).assign (func);
 		push_context (decl_context);
 		js.stmt (def);
 		pop_context ();
@@ -456,9 +454,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			// initialize default
 			// declare local variable for parameter
 			js.stmt (jsvar(param.name));
-			js.open_if (jsmember("param_"+param.name).inequal (jsundefined ()));
+			js.open_if (jsmember("param_"+param.name).direct_inequal (jsundefined ()));
 			if (!param.variable_type.nullable) {
-				js.open_if (jsmember("param_"+param.name).equal (jsnull ()));
+				js.open_if (jsmember("param_"+param.name).direct_equal (jsnull ()));
 				js.error (jsstring ("Unexpected null parameter '"+param.name+"'"));
 				js.close ();
 			}
@@ -499,12 +497,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			js.stmt (jsvar (temp).assign (jsexpr (func).parens ().call ()));
 			// we are temporarly out of the captured block
 			block.captured = false;
-			js.open_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.RETURN)));
+			js.open_if (jsmember (temp).direct_equal (jsinteger (ControlFlowStatement.RETURN)));
 			emit_control_flow_statement (ControlFlowStatement.RETURN);
 			if (is_in_loop (false)) {
-				js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.BREAK)));
+				js.add_else_if (jsmember (temp).direct_equal (jsinteger (ControlFlowStatement.BREAK)));
 				emit_control_flow_statement (ControlFlowStatement.BREAK);
-				js.add_else_if (jsmember (temp).equal (jsinteger (ControlFlowStatement.CONTINUE)));
+				js.add_else_if (jsmember (temp).direct_equal (jsinteger (ControlFlowStatement.CONTINUE)));
 				emit_control_flow_statement (ControlFlowStatement.CONTINUE);
 			}
 			js.close ();
@@ -553,10 +551,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			jscode.ge (jsright);
 			break;
 		case BinaryOperator.EQUALITY:
-			jscode.equal (jsright);
+			jscode.direct_equal (jsright);
 			break;
 		case BinaryOperator.INEQUALITY:
-			jscode.inequal (jsright);
+			jscode.direct_inequal (jsright);
 			break;
 		case BinaryOperator.AND:
 			jscode.and (jsright);
@@ -772,6 +770,20 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
+		if (get_javascript_bool (expr.call.symbol_reference, "equals")) {
+			var arguments = expr.get_argument_list ();
+			var container = ((MemberAccess) expr.call).inner;
+			set_jsvalue (expr, jsexpr (get_jsvalue (arguments[0])).equal (get_jsvalue (container)));
+			return;
+		}
+
+		if (get_javascript_bool (expr.call.symbol_reference, "contains")) {
+			var arguments = expr.get_argument_list ();
+			var container = ((MemberAccess) expr.call).inner;
+			set_jsvalue (expr, jsexpr (get_jsvalue (arguments[0])).contained_in (get_jsvalue (container)));
+			return;
+		}
+
 		if (get_javascript_bool (expr.call.symbol_reference, "getter")) {
 			var arguments = expr.get_argument_list ();
 			var container = ((MemberAccess) expr.call).inner;
