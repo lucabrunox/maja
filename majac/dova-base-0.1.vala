@@ -222,3 +222,8 @@ public class Dova.Tuple<T> : Object {
 	public extern int length { get; private set; }
 	public extern T get (int index);
 }
+public abstract class Dova.Iterator<T> : Dova.Object {
+	public Iterator ();
+	public abstract T get ();
+	public abstract bool next ();
+}

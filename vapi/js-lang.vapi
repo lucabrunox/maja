@@ -12,7 +12,17 @@ namespace Javascript {
 	public class Object {
 	}
 
-	public class Array : Object {
+	[Javascript (native_array = true)]
+	public class Array<T> : Object {
+		public Array (...);
+
+		public void push<T> (T element);
+		[Javascript (contains = true)]
+		public bool contains (T element);
+		[Javascript (getter = true)]
+		public T get (int index);
+		[Javascript (setter = true)]
+		public void set (int index, T element);
 	}
 
 	public class Event {

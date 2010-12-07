@@ -170,6 +170,11 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder contained_in (JSCode code) {
+		current = new JSOperation (current, " in ", code, true);
+		return this;
+	}
+
 	public JSExpressionBuilder instanceof (JSCode code) {
 		current = new JSOperation (current, " instanceof ", code, true);
 		return this;

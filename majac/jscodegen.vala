@@ -228,15 +228,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"any.to_string", "name", "\"toString\""},
 		{"string.contains", "static", "true"},
 		{"string.index_of", "name", "\"indexOf\""},
-		{"List.length", "simple_field", "true"},
-		// dova-model
-		{"ListModel", "native_array", "true"},
-		{"ListModel.length", "simple_field", "true"},
-		{"ListModel.get", "getter", "true"},
-		{"ListModel.set", "setter", "true"},
-		{"ListModel.iterator", "static", "true"},
-		{"ListModel.append", "name", "\"push\""},
-		{"SetModel.iterator", "static", "true"}};
+		{"List.length", "simple_field", "true"}};
+
 
 	public JSCodeGenerator () {
         // TODO:
@@ -571,6 +564,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		case BinaryOperator.OR:
 			jscode.or (jsright);
 			break;
+		case BinaryOperator.IN:
+			jscode.contained_in (jsright);
+			break;
 		default:
 			assert_not_reached ();
 		}
@@ -739,21 +735,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var cl = expr.type_reference.data_type as Class;
 		if (cl == null)
 			return;
-		var jscode = jsmember (cl.get_full_name ());
-		if (expr.symbol_reference != cl.default_construction_method)
-			jscode.member (expr.symbol_reference.name);
 
+		JSExpressionBuilder jscode;
 		if (get_javascript_bool (cl, "native_array")) {
-			var temp = get_temp_variable_name ();
-			js.stmt (jsvar (temp).assign (jslist (true)));
-			jscode = jsbind (jscode, jsmember (temp));
-			jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr);
-			js.stmt (jscode);
-			set_jsvalue (expr, jsmember (temp));
+			jscode = jsexpr (jslist (true));
 		} else {
+			jscode = jsmember (cl.get_full_name ());
+			if (expr.symbol_reference != cl.default_construction_method) {
+				jscode.member (expr.symbol_reference.name);
+			}
 			jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr).keyword ("new");
-			set_jsvalue (expr, jscode);
 		}
+		set_jsvalue (expr, jscode);
 	}
 
 	public override void visit_assignment (Assignment expr) {
@@ -1230,7 +1223,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_context (new EmitContext (m));
 		var func = jsfunction ();
 		push_function (func);
-		if (!m.chain_up && !get_javascript_bool (cl, "native_array")) {
+		if (!m.chain_up) {
 			js.stmt (jsmember ("this._maja_init").call ());
 		}
 		m.accept_children (this);
