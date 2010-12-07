@@ -50,6 +50,14 @@ namespace Dova {
 			array[index] = element;
 		}
 		public extern override int length { get; private set; }
+
+		public override List<T> to_list () {
+			var copy = new T[array.length];
+			for (var i=0; i < array.length; i++) {
+				copy[i] = array[i];
+			}
+			return (List<T>) copy;
+		}
 	}
 	[CCode (cheader_filename = "dova-model.h")]
 	public abstract class DequeModel<T> : Dova.Object {
@@ -79,6 +87,7 @@ namespace Dova {
 		public extern override Dova.Iterator<T> iterator ();
 		public extern override bool remove (T element);
 		public extern override int size { get; private set; }
+		public extern override List<T> to_list ();
 	}
 	[CCode (cheader_filename = "dova-model.h")]
 	public abstract class Iterable<T> : Dova.Object {
@@ -90,7 +99,7 @@ namespace Dova {
 		public abstract Dova.Iterator<T> iterator ();
 		public extern Dova.Iterable<R> map<R> (MapFunc<T,R> func);
 		public extern Dova.Iterable<T> take (int n);
-		public extern Dova.List<T> to_list ();
+		public abstract Dova.List<T> to_list ();
 	}
 	[CCode (cheader_filename = "dova-model.h")]
 	public abstract class ListModel<T> : Dova.Iterable<T> {

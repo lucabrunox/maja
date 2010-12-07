@@ -15,6 +15,8 @@ namespace Javascript {
 		public new bool equals (any? other);
 		[Javascript (equals = true)]
 		public bool js_equals (any? other);
+		[Javascript (copy = true)]
+		public T copy<T> ();
 	}
 
 	[Javascript (native_array = true)]
@@ -28,6 +30,8 @@ namespace Javascript {
 		public T get (int index);
 		[Javascript (setter = true)]
 		public void set (int index, T element);
+		[Javascript (simple_field = true)]
+		public int length { get; }
 	}
 
 	public class Event {
