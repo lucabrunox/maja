@@ -10,6 +10,7 @@ namespace Javascript {
 	public string encodeURIComponent (string component);
 
 	public class Object {
+		public Object ();
 		[Javascript (contains = true)]
 		public bool contains (any key);
 		public new bool equals (any? other);
@@ -17,6 +18,12 @@ namespace Javascript {
 		public bool js_equals (any? other);
 		[Javascript (copy = true)]
 		public T copy<T> ();
+		[Javascript (getter = true)]
+		public any get (any key);
+		[Javascript (getter = true)]
+		public void set (any key, any value);
+		[Javascript (delete = true)]
+		public void delete (any key);
 	}
 
 	[Javascript (native_array = true)]

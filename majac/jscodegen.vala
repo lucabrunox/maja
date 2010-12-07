@@ -770,6 +770,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
+		if (get_javascript_bool (expr.call.symbol_reference, "delete")) {
+			var arguments = expr.get_argument_list ();
+			var container = ((MemberAccess) expr.call).inner;
+			set_jsvalue (expr, jsexpr (get_jsvalue (container)).element_code (get_jsvalue (arguments[0])).keyword ("delete"));
+			return;
+		}
+
 		if (get_javascript_bool (expr.call.symbol_reference, "equals")) {
 			var arguments = expr.get_argument_list ();
 			var container = ((MemberAccess) expr.call).inner;
