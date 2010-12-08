@@ -41,6 +41,10 @@ namespace Javascript {
 		public int length { get; }
 	}
 
+	public class String {
+		public string substring (int from, int? to = null);
+	}
+
 	public class Event {
 	}
 
@@ -59,8 +63,15 @@ namespace Javascript {
 	}
 
 	public class Window {
+		[Javascript (simple_field = true)]
+		public Location location;
 		public int setTimeout (Callback callback, int interval);
 		public void open (string url, string mode);
+	}
+
+	public class Location {
+		[Javascript (simple_field = true)]
+		public string href;
 	}
 
 	namespace DOM {

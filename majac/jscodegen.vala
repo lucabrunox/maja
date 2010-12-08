@@ -224,12 +224,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public DataType void_type = new VoidType ();
 
 	const AttributeMap[] dova_attributes = {
-		// dova-base
-		{"any.to_string", "name", "\"toString\""},
-		{"any.equals", "static", "true"},
-		{"Dova.Error.to_string", "name", "\"toString\""},
-		{"string.contains", "static", "true"},
-		{"string.index_of", "name", "\"indexOf\""},
+		{"any", "camelcase", "true"},
+		{"char", "camelcase", "true"},
+		{"string", "camelcase", "true"},
+		{"any.equals", "externalized", "true"},
+		{"char.to_upper", "name", "toUpperCase"},
+		{"char.to_lower", "name", "toLowerCase"},
+		{"string.contains", "externalized", "true"},
+		{"char.to_string", "static", "\"String.fromCharCode\""},
 		{"Dova.List.length", "simple_field", "true"}};
 
 	public JSCodeGenerator () {
@@ -408,7 +410,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var def = jsexpr ();
 		if (current_type_symbol != null) {
 			def.member (get_symbol_full_jsname (current_type_symbol));
-			if (m.binding == MemberBinding.INSTANCE && !get_javascript_bool (m, "static")) {
+			if (m.binding == MemberBinding.INSTANCE && !get_javascript_bool (m, "externalized")) {
 				def.member ("prototype");
 			}
 		}
@@ -656,7 +658,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 		if (ma.inner != null && ma.inner.symbol_reference != javascript_ns) {
 			jscode = jsexpr (get_jsvalue (ma.inner));
-			if (get_javascript_bool (ma.symbol_reference, "static")) {
+			if (get_javascript_bool (ma.symbol_reference, "externalized")) {
 				jscode = jsbind (jsmember (get_symbol_full_jsname (ma.symbol_reference)), get_jsvalue (ma.inner));
 			} else {
 				var prop = ma.symbol_reference as Property;
@@ -811,7 +813,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			return;
 		}
 
-		CodeNode callable;
+		Symbol callable;
 		if (expr.call.symbol_reference is Class) {
 			callable = ((Class) expr.call.symbol_reference).default_construction_method;
 		} else if (expr.call.value_type is DelegateType) {
@@ -821,7 +823,15 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		bool has_out_parameters;
-		var jscode = emit_call (callable, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
+		var static_member = get_javascript_string (callable, "static");
+		JSCode jscode;
+		if (static_member != null) {
+			// call this method like a static method with instance as first argument
+			var instance = ((MemberAccess) expr.call).inner;
+			jscode = emit_call (callable, jsmember (static_member), expr.get_argument_list (), out has_out_parameters, expr, get_jsvalue (instance));
+		} else {
+			jscode = emit_call (callable, jsexpr (get_jsvalue (expr.call)), expr.get_argument_list (), out has_out_parameters, expr);
+		}
 		if (!(expr.parent_node is ExpressionStatement && has_out_parameters)) {
 			set_jsvalue (expr, jscode);
 		}
@@ -1026,7 +1036,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSExpressionBuilder? emit_call (CodeNode callable, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null) {
+	public JSExpressionBuilder? emit_call (CodeNode callable, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null, JSCode? first_argument = null) {
 		var m = callable as Method;
 		var d = callable as Delegate;
 		bool has_result;
@@ -1038,6 +1048,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		Expression[] out_results = null;
 		has_out_results = false;
 		var jsargs = jslist ();
+		if (first_argument != null) {
+			jsargs.add (first_argument);
+		}
 
 		var arg_it = arguments.iterator ();
 		Vala.List<Vala.Parameter> parameters;
@@ -1203,17 +1216,19 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public string get_symbol_jsname (Symbol sym, string? name = null) {
-		if (name == null) {
+		var result = name;
+		if (result == null) {
 			var js_name = get_javascript_string (sym, "name");
 			if (js_name != null) {
 				return js_name;
 			}
-			name = sym.name;
+			result = sym.name;
 		}
-		if (get_javascript_bool (sym, "camelcase", true)) {
-			return lower_case_to_camel_case (name, get_javascript_bool (sym, "first_capital", true));
+		result = get_variable_jsname (result);
+		if (!(sym is LocalVariable) && get_javascript_bool (sym, "camelcase", true)) {
+			result = lower_case_to_camel_case (result, get_javascript_bool (sym, "first_capital", true));
 		}
-		return get_variable_jsname (name);
+		return result;
 	}
 
 	public string get_symbol_full_jsname (Symbol sym) {

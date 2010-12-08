@@ -18,6 +18,10 @@ namespace qx {
 		public class Object {
 			public string tr (string str);
 			public string add_listener (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
+			[Javascript (setter = true)]
+			public G set<T,G> (string key, T value);
+			[Javascript (name = "set")]
+			public Object set_many (Dova.Map<string,any> data);
 			public void set_user_data (string key, any value);
 			public T get_user_data<T> (string key);
 		}
@@ -98,6 +102,7 @@ namespace qx {
 				public void reload ();
 			}
 			public class Iframe : AbstractIframe {
+				public Iframe ();
 			}
 		}
 		namespace basic {

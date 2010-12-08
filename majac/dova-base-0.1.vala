@@ -51,6 +51,8 @@ public struct byte {
 [IntegerType (rank = 7, width = 32)]
 public struct char {
 	public extern string to_string ();
+	public extern char to_lower ();
+	public extern char to_upper ();
 }
 
 [IntegerType (rank = 2, width = 8)]
@@ -147,6 +149,8 @@ public class string : Dova.Value {
 
 	// concat is in javascript
 	public extern string concat (string other);
+
+	public extern char get_char (int index);
 
 	public bool contains (string value) {
 		return index_of (value) >= 0;
