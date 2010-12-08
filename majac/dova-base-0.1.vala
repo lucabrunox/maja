@@ -38,7 +38,7 @@ public class Dova.Error {
 		this.message = message;
 	}
 
-	public string to_string () {
+	public override string to_string () {
 		return message;
 	}
 }
