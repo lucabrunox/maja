@@ -1,4 +1,4 @@
-[Javascript (camelcase = true)]
+[Javascript (camelcase = true, no_maja_init = true)]
 namespace qx {
 	namespace bom {
 		public class History : qx.core.Object {
@@ -47,7 +47,7 @@ namespace qx {
 			public string tr (string str);
 			public void debug (...);
 			public string add_listener (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
-			[Javascript (setter = true)]
+			[Javascript (setter = false)]
 			public G set<T,G> (string key, T value);
 			[Javascript (name = "set")]
 			public Object set_many (Dova.Map<string,any> data);

@@ -390,7 +390,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_context (base_init_context);
 		var init_func = jsfunction ();
 		push_function (init_func);
-		if (cl.base_class != null) {
+		if (cl.base_class != null && !get_javascript_bool (cl.base_class, "no_maja_init", true)) {
 			js.stmt (jsmember(cl.base_class.get_full_name()).member("prototype._maja_init").member("call").call(jsmember("this")));
 		}
 		pop_context ();
@@ -500,7 +500,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (block.captured) {
 			pop_function ();
 			var temp = get_temp_variable_name ();
-			js.stmt (jsvar (temp).assign (jsexpr (func).parens ().call ()));
+			js.stmt (jsvar (temp).assign (jsbind (jsexpr (func)).call ()));
 			// we are temporarly out of the captured block
 			block.captured = false;
 			js.open_if (jsmember (temp).direct_equal (jsinteger (ControlFlowStatement.RETURN)));
@@ -1291,7 +1291,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		push_context (new EmitContext (m));
 		var func = jsfunction ();
 		push_function (func);
-		if (!m.chain_up) {
+		if (!m.chain_up || (cl.base_class != null && get_javascript_bool (cl.base_class, "no_maja_init", true))) {
 			js.stmt (jsmember ("this._maja_init").call ());
 		}
 		m.accept_children (this);

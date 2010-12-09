@@ -8,7 +8,7 @@ Maja.inherit = function (subclass, superclass) {
     var helper = new Function;
     helper.prototype = superclass.prototype;
     subclass.prototype = new helper;
-    subclass.constructor = subclass;
+    subclass.prototype.constructor = subclass;
 };
 Maja.mixin = function (dest, over) {
     for (var key in over)
