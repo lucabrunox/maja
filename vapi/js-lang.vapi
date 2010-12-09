@@ -4,7 +4,9 @@ namespace Javascript {
 	public any[] arguments;
 	public DOM.Document document;
 	public Navigator navigator;
-	public Window window;
+	public dynamic Window window;
+
+	public int parse_int (string str);
 
 	[Javascript (name = "encodeURIComponent")]
 	public string encode_uri_component (string component);
@@ -77,6 +79,9 @@ namespace Javascript {
 
 	namespace DOM {
 		public class Document {
+			[Javascript (simple_field = true)]
+			public string title;
+
 			public Element create_element (string name);
 			public Node create_text_node (string text);
 			public Element[] get_elements_by_tag_name (string name);
@@ -87,6 +92,8 @@ namespace Javascript {
 		}
 
 		public class Element : Node {
+			[Javascript (simple_field = true)]
+			public dynamic Javascript.Object style;
 			public void set_attribute (string name, any value);
 		}
 	}

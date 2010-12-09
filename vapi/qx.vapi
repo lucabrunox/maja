@@ -1,5 +1,31 @@
 [Javascript (camelcase = true)]
 namespace qx {
+	namespace bom {
+		public class History : qx.core.Object {
+			public static History get_instance ();
+			public void add_to_history (string state, string? new_title = null);
+		}
+	}
+	namespace log {
+		public class Logger {
+			public static void unregister (any appender);
+		}
+		namespace appender {
+			public class Element : qx.core.Object {
+				[Javascript (name = "\$\$id", simple_field = true)]
+				public any id;
+				public Javascript.DOM.Element element { set; }
+				public Element (Javascript.DOM.Element? element = null);
+				public void clear ();
+			}
+		}
+	}
+	namespace html {
+		public class Element : qx.core.Object {
+			public void set_attribute (string key, string value, bool direct = false);
+			public void use_element (Javascript.DOM.Element element);
+		}
+	}
 	namespace event {
 		namespace type {
 			public class Event {
@@ -7,8 +33,10 @@ namespace qx {
 			}
 		}
 		public delegate void Callback (dynamic type.Event? e);
-		public class Timer {
+		public class Timer : core.Object {
+			public Timer (int interval);
 			public static Timer once ([Javascript (has_this_parameter = true)] Callback function, int timeout);
+			public void start ();
 		}
 	}
 	namespace core {
@@ -17,6 +45,7 @@ namespace qx {
 		}
 		public class Object {
 			public string tr (string str);
+			public void debug (...);
 			public string add_listener (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
 			[Javascript (setter = true)]
 			public G set<T,G> (string key, T value);
@@ -30,6 +59,13 @@ namespace qx {
 		}
 	}
 	namespace ui {
+		namespace decoration {
+			public class Abstract : qx.core.Object {
+			}
+			public class Background : Abstract {
+				public Background (string? color = null);
+			}
+		}
 		namespace splitpane {
 			public class Pane : core.Widget {
 				public Pane (string orientation = "horizontal");
@@ -56,6 +92,7 @@ namespace qx {
 			public class Tree : core.scroll.AbstractScrollArea {
 				public AbstractTreeItem root;
 				public Dova.List<AbstractTreeItem> selection;
+				public Dova.List<AbstractTreeItem> children { get; }
 
 				public Tree ();
 
@@ -65,6 +102,8 @@ namespace qx {
 			}
 			public class AbstractTreeItem : core.Widget {
 				public Tree? tree { get; }
+				public Dova.List<AbstractTreeItem> children { get; }
+				public string label;
 				public bool open;
 				public AbstractTreeItem parent;
 				public Dova.List<AbstractTreeItem> get_items (bool recursive = true, bool invisible = true, bool ignore_first = true);
@@ -96,8 +135,12 @@ namespace qx {
 			}
 		}
 		namespace embed {
+			public class Html : core.Widget {
+				public Html (string? html = null);
+				public void set_overflow (string overflow_x, string overflow_y);
+			}
 			public class AbstractIframe : core.Widget {
-				public Javascript.Window window { get; }
+				public dynamic Javascript.Window window { get; }
 				public string source;
 				public void reload ();
 			}
@@ -110,6 +153,7 @@ namespace qx {
 			}
 			public class Label : core.Widget {
 				public string text_align;
+				public string value;
 
 				public Label (string value);
 			}
@@ -118,6 +162,12 @@ namespace qx {
 			}
 		}
 		namespace container {
+			public class Stack : core.Widget {
+				public Dova.List<core.Widget> selection;
+				public Stack ();
+				public void add (core.Widget widget);
+				public void reset_selection ();
+			}
 			public class Composite : core.Widget {
 				public layout.Abstract layout;
 
@@ -156,17 +206,24 @@ namespace qx {
 			public class LayoutItem : qx.core.Object {
 				public int min_width;
 				public int width;
+				public int margin;
+				public bool allow_grow_x;
 			}
 			public class Widget : LayoutItem {
+				public string font;
 				public string appearance;
 				public string visibility;
 				public string tool_tip_text;
-				public string decorator;
+				[Javascript (name = "decorator")]
+				public string decorator_name;
+				public decoration.Abstract decorator;
 				public string background_color;
 				public bool enabled;
+				public html.Element content_element { get; }
 
 				public bool is_visible ();
 				public void exclude ();
+				public void show ();
 			}
 			public class Spacer : LayoutItem {
 				public Spacer (int? width = null, int? height = null);
@@ -177,6 +234,7 @@ namespace qx {
 			}
 			public class VBox : Abstract {
 				public string separator;
+				public string align_x;
 
 				public VBox (int spacing = 0, string align_y = "top", string? separator = null);
 			}
