@@ -141,7 +141,6 @@ public class string : Dova.Value {
 	// FIXME: length is not in bytes
 	// hardcoded in maja
 	// FIXME: Vala must allow get only for extern
-
 	public extern int length { get; private set; }
 
 	// slice is in javascript
@@ -149,8 +148,6 @@ public class string : Dova.Value {
 
 	// concat is in javascript
 	public extern string concat (string other);
-
-	public extern char get_char (int index);
 
 	public bool contains (string value) {
 		return index_of (value) >= 0;
@@ -187,26 +184,19 @@ public class string : Dova.Value {
 	public extern List<string> split (string delimiter);
 
 	public string join (List<string> list) {
-		result = "";
-
-		if (list.length > 0) {
-			result += list[0];
-			for (int i = 1; i < list.length; i++) {
-				result += this;
-				result += list[i];
-			}
-		}
+		return ((Javascript.Array) list).join (this);
 	}
 
 	public override string to_string () {
 		return this;
 	}
 
-	// equals is hardcoded in javascript
-	// FIXME: what's the point of "new" in static methods?
+	// FIXME: why not instance method?
 	public extern static new bool equals (string? a, string? b);
 
 	// get() is hardcoded
+	public extern byte get (int index);
+	public extern char get_char (int index);
 
 	// index_of() is hardcoded as javascript indexOf()
 	public extern int index_of (string needle, int start_index = 0, int end_index = -1);
@@ -222,11 +212,8 @@ public class string : Dova.Value {
 		return last_index_of (c.to_string (), start_index, end_index);
 	}
 
-	// to_lower is hardcoded as toLowerCase
-
-	// to_upper is hardcoded as toUpperCase
-
-	// replace() is native
+	public extern string to_upper ();
+	public extern string to_lower ();
 	public extern string replace (string old, string replacement);
 }
 

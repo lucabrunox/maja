@@ -319,6 +319,18 @@ public class Maja.JSBlockBuilder : JSCode {
 		current = new JSBlock (current, "while", condition);
 	}
 
+	public void open_switch (JSCode expr) {
+		current = new JSBlock (current, "switch", expr);
+	}
+
+	public void add_label (JSCode label) {
+		current.statements.add (new JSLabel (label));
+	}
+
+	public void add_case (JSCode label) {
+		current.statements.add (new JSLabel (label, true));
+	}
+
 	public void close () {
 		current = current.parent;
 	}
@@ -394,6 +406,25 @@ public class Maja.JSText : JSCode {
 	public override void write (JSWriter writer) {
 		writer.write_string (text);
 	}
+}
+
+public class Maja.JSLabel : JSCode {
+	public bool is_case;
+	public JSCode label;
+
+	public JSLabel (JSCode label, bool is_case = false) {
+		this.label = label;
+		this.is_case = is_case;
+		this.no_semicolon = true;
+	}
+
+	public override void write (JSWriter writer) {
+		if (is_case) {
+			writer.write_string ("case ");
+		}
+		label.write (writer);
+		writer.write_string (":");
+	}	
 }
 
 public class Maja.JSList : JSCode {

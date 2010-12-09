@@ -8,9 +8,9 @@ TESTS_ENVIRONMENT = $(JSBIN) \
 	-f $(top_builddir)/majac/dova-model-0.1.js
 
 TESTS = \
-	blockcapture.js \
-	capturedloop.js \
+	dovabase.js \
 	dovamodel.js \
+	langsupport.js \
 	$(NULL)
 
 CLEANFILES = \

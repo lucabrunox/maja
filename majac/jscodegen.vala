@@ -225,13 +225,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	const AttributeMap[] dova_attributes = {
 		{"any", "camelcase", "true"},
-		{"char", "camelcase", "true"},
-		{"string", "camelcase", "true"},
 		{"any.equals", "externalized", "true"},
-		{"char.to_upper", "name", "toUpperCase"},
-		{"char.to_lower", "name", "toLowerCase"},
-		{"string.contains", "externalized", "true"},
+		{"char", "camelcase", "true"},
+		{"char.to_upper", "name", "\"toUpperCase\""},
+		{"char.to_lower", "name", "\"toLowerCase\""},
 		{"char.to_string", "static", "\"String.fromCharCode\""},
+		{"string", "camelcase", "true"},
+		{"string.join", "externalized", "true"},
+		{"string.to_upper", "name", "\"toUpperCase\""},
+		{"string.to_lower", "name", "\"toLowerCase\""},
+		{"string.contains", "externalized", "true"},
+		{"Dova.Error", "camelcase", "true"},
 		{"Dova.List.length", "simple_field", "true"}};
 
 	public JSCodeGenerator () {
@@ -716,9 +720,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		var name = acc.parent_symbol.name;
 		if (acc.readable) {
-			name = "get_"+name;
+			name = get_symbol_jsname (acc, "get_"+name);
 		} else {
-			name = "set_"+name;
+			name = get_symbol_jsname (acc, "set_"+name);
 		}
 		push_context (decl_context);
 		js.stmt (jsmember (acc.parent_symbol.parent_symbol.get_full_name ()).member ("prototype").member (name).assign (func));
@@ -772,6 +776,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_method_call (MethodCall expr) {
+		if (expr.call.symbol_reference.get_full_name () == "string.concat") {
+			var arguments = expr.get_argument_list ();
+			var instance = ((MemberAccess) expr.call).inner;
+			set_jsvalue (expr, jsexpr (get_jsvalue (instance)).plus (get_jsvalue (arguments[0])));
+			return;
+		}
+
 		if (get_javascript_bool (expr.call.symbol_reference, "delete")) {
 			var arguments = expr.get_argument_list ();
 			var container = ((MemberAccess) expr.call).inner;
@@ -852,7 +863,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_loop (Loop loop) {
-		js.open_while (jstext("true"));
+		js.open_while (jstext ("true"));
 		loop.body.emit (this);
 		js.close ();
 	}
@@ -938,6 +949,24 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public override void visit_type_check (TypeCheck expr) {
 		set_jsvalue (expr, jsexpr (get_jsvalue (expr.expression)).instanceof (jsmember (get_symbol_full_jsname (expr.type_reference.data_type))));
+	}
+
+	public override void visit_switch_statement (SwitchStatement stmt) {
+		js.open_switch (get_jsvalue (stmt.expression));
+		foreach (var section in stmt.get_sections ()) {
+			if (section.has_default_label ()) {
+				js.add_label (jstext ("default"));
+			}
+			section.emit (this);
+		}
+		js.close ();
+	}
+
+	public override void visit_switch_label (SwitchLabel label) {
+		if (label.expression != null) {
+			label.expression.emit (this);
+			js.add_case (get_jsvalue (label.expression));
+		}
 	}
 
 	public JSCode generate_method (Method m) {

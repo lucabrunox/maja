@@ -1,5 +1,4 @@
-using Dova;
-
+[Javascript (camelcase = true)]
 namespace Javascript {
 	/* Global javascript variables */
 	public any[] arguments;
@@ -7,7 +6,8 @@ namespace Javascript {
 	public Navigator navigator;
 	public Window window;
 
-	public string encodeURIComponent (string component);
+	[Javascript (name = "encodeURIComponent")]
+	public string encode_uri_component (string component);
 
 	public class Object {
 		public Object ();
@@ -39,6 +39,7 @@ namespace Javascript {
 		public void set (int index, T element);
 		[Javascript (simple_field = true)]
 		public int length { get; }
+		public string join (string delimiter);
 	}
 
 	public class String {
@@ -65,7 +66,7 @@ namespace Javascript {
 	public class Window {
 		[Javascript (simple_field = true)]
 		public Location location;
-		public int setTimeout (Callback callback, int interval);
+		public int set_timeout (Callback callback, int interval);
 		public void open (string url, string mode);
 	}
 
@@ -76,17 +77,17 @@ namespace Javascript {
 
 	namespace DOM {
 		public class Document {
-			public Element createElement (string name);
-			public Node createTextNode (string text);
-			public Element[] getElementsByTagName (string name);
+			public Element create_element (string name);
+			public Node create_text_node (string text);
+			public Element[] get_elements_by_tag_name (string name);
 		}
 
 		public class Node {
-			public void appendChild (Node node);
+			public void append_child (Node node);
 		}
 
 		public class Element : Node {
-			public void setAttribute (string name, any value);
+			public void set_attribute (string name, any value);
 		}
 	}
 }
