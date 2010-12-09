@@ -675,7 +675,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			} else {
 				var member_name = get_symbol_jsname (sym);
 				var prop = sym as Property;
-				if (prop != null && !get_javascript_bool (prop, "simple_field")) {
+				if (prop != null && !get_javascript_bool (prop, "simple_field") && (ma.inner == null || !ma.inner.value_type.is_dynamic)) {
 					jscode.member (get_symbol_jsname (prop, "get_"+member_name)).call ();
 				} else {
 					jscode.member (member_name);
