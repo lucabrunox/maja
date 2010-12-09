@@ -82,7 +82,9 @@ namespace Dova {
 		public void remove (K key) {
 			map.delete ((any) key);
 		}
-		public extern override void set (K key, V value);
+		public override void set (K key, V value) {
+			map[(any) key] = (any) value;
+		}
 		public extern Dova.Iterable<K> keys { get; private set; }
 		public extern int size { get; private set; }
 		public extern Dova.Iterable<V> values { get; private set; }

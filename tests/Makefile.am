@@ -18,4 +18,4 @@ CLEANFILES = \
 	$(NULL)
 
 %.js: %.vala $(top_builddir)/majac/majac
-	$(top_builddir)/majac/majac --vapidir $(top_srcdir)/dova-vapi --vapidir $(top_srcdir)/vapi --pkg dova-base-0.1 --pkg dova-app-0.1 --pkg dova-model-0.1 $<
+	$(top_builddir)/majac/majac --vapidir $(top_srcdir)/dova-vapi --vapidir $(top_srcdir)/vapi --pkg js-lang --pkg dova-base-0.1 --pkg dova-app-0.1 --pkg dova-model-0.1 $<

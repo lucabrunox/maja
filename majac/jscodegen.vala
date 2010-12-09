@@ -412,8 +412,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		// declare function
 		var def = jsexpr ();
-		if (current_type_symbol != null) {
-			def.member (get_symbol_full_jsname (current_type_symbol));
+		if (m.parent_symbol != root_symbol) {
+			def.member (get_symbol_full_jsname (m.parent_symbol));
 			if (m.binding == MemberBinding.INSTANCE && !get_javascript_bool (m, "externalized")) {
 				def.member ("prototype");
 			}
@@ -656,24 +656,31 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public override void visit_member_access (MemberAccess ma) {
 		JSExpressionBuilder jscode = null;
 
-		var member_name = ma.member_name;
-		if (ma.inner != null || ma.member_name != "this") {
-			member_name = get_symbol_jsname (ma.symbol_reference);
-		}
-		if (ma.inner != null && ma.inner.symbol_reference != javascript_ns) {
-			jscode = jsexpr (get_jsvalue (ma.inner));
-			if (get_javascript_bool (ma.symbol_reference, "externalized")) {
-				jscode = jsbind (jsmember (get_symbol_full_jsname (ma.symbol_reference)), get_jsvalue (ma.inner));
+		var sym = ma.symbol_reference;
+		if (ma.inner == null && ma.member_name == "this") {
+			jscode = jsmember ("this");
+		} else if (sym is LocalVariable || sym is Vala.Parameter) {
+			jscode = jsmember (get_variable_jsname (ma.member_name));
+		} else {
+			if (ma.inner != null && ma.inner.symbol_reference != javascript_ns) {
+				jscode = jsexpr (get_jsvalue (ma.inner));
+			} else if (sym.parent_symbol != null && sym.parent_symbol != root_symbol && sym.parent_symbol != javascript_ns) {
+				jscode = jsmember (get_symbol_full_jsname (sym.parent_symbol));
 			} else {
-				var prop = ma.symbol_reference as Property;
+				jscode = jsexpr ();
+			}
+
+			if (get_javascript_bool (sym, "externalized")) {
+				jscode = jsbind (jsmember (get_symbol_full_jsname (sym)), get_jsvalue (ma.inner));
+			} else {
+				var member_name = get_symbol_jsname (sym);
+				var prop = sym as Property;
 				if (prop != null && !get_javascript_bool (prop, "simple_field")) {
 					jscode.member (get_symbol_jsname (prop, "get_"+member_name)).call ();
 				} else {
 					jscode.member (member_name);
 				}
 			}
-		} else {
-			jscode = jsmember (member_name);
 		}
 
 		set_jsvalue (ma, jscode);
@@ -744,10 +751,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		if (get_javascript_bool (cl, "native_array")) {
 			jscode = jsexpr (jslist (true));
 		} else {
-			jscode = jsmember (cl.get_full_name ());
-			if (expr.symbol_reference != cl.default_construction_method) {
-				jscode.member (expr.symbol_reference.name);
-			}
+			expr.member_name.emit (this);
+			jscode = jsexpr (get_jsvalue (expr.member_name));
 			jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr).keyword ("new");
 		}
 		set_jsvalue (expr, jscode);

@@ -11,6 +11,24 @@ void test_array_list () {
 	}
 }
 
+void test_hash_map () {
+	var m = new HashMap<string,string> ();
+	m["foo"] = "bar";
+	assert (m["foo"] == "bar");
+}
+
+void test_hash_set () {
+	/*
+	var s = new HashSet<string> ();
+	s.add ("foo");
+	s.add ("bar");
+	var l = (Javascript.Array<string>) s.to_list ();
+	assert (l.length == 2);
+	assert ("foo" in l);
+	assert ("bar" in l);
+	*/
+}
+
 public class Foo {
 	public override bool equals (any? other) {
 		return true;
@@ -31,5 +49,7 @@ void test_equals () {
 
 void main () {
 	test_array_list ();
+	test_hash_map ();
+	test_hash_set ();
 	test_equals ();
 }

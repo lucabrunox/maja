@@ -20,7 +20,7 @@ namespace Javascript {
 		public T copy<T> ();
 		[Javascript (getter = true)]
 		public any get (any key);
-		[Javascript (getter = true)]
+		[Javascript (setter = true)]
 		public void set (any key, any value);
 		[Javascript (delete = true)]
 		public void delete (any key);
