@@ -1,6 +1,7 @@
 [Javascript (camelcase = true)]
 namespace Javascript {
 	/* Global javascript variables */
+	public void* undefined;
 	public any[] arguments;
 	public DOM.Document document;
 	public Navigator navigator;
@@ -53,11 +54,13 @@ namespace Javascript {
 		[Javascript (simple_field = true)]
 		public int length { get; }
 		public string join (string delimiter);
+		[Javascript (no_default = true)]
 		public Javascript.Array<T> slice (int start, int? end = null);
 		public void sort (CompareFunc<T> compare_func);
 	}
 
 	public class String {
+		[Javascript (no_default = true)]
 		public string substring (int from, int? to = null);
 	}
 
@@ -70,6 +73,7 @@ namespace Javascript {
 	public void alert (any object);
 
 	public class RegExp {
+		[Javascript (no_default = true)]
 		public RegExp (string pattern, string? modifiers = null);
 		public bool test (string str);
 		public string[] exec (string str);
@@ -81,20 +85,20 @@ namespace Javascript {
 
 	public class Window {
 		[Javascript (simple_field = true)]
-		public Location location;
+		public Location location { get; set; }
 		public int set_timeout (Callback callback, int interval);
 		public void open (string url, string mode);
 	}
 
 	public class Location {
 		[Javascript (simple_field = true)]
-		public string href;
+		public string href { get; set; }
 	}
 
 	namespace DOM {
 		public class Document {
 			[Javascript (simple_field = true)]
-			public string title;
+			public string title { get; set; }
 
 			public Element create_element (string name);
 			public Node create_text_node (string text);

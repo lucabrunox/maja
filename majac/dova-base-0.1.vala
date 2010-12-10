@@ -43,7 +43,6 @@ public class Dova.Error {
 	}
 }
 
-// to_string() is hardcoded for all basic types
 [IntegerType (rank = 3, width = 8, signed = false)]
 public struct byte {
 }
@@ -202,6 +201,9 @@ public class string : Dova.Value {
 	public extern int index_of (string needle, int start_index = 0, int end_index = -1);
 
 	public int index_of_char (char c, int start_index = 0, int end_index = -1) {
+		if (end_index == -1) {
+			end_index = length;
+		}
 		return index_of (c.to_string (), start_index, end_index);
 	}
 
@@ -209,6 +211,9 @@ public class string : Dova.Value {
 	public extern int last_index_of (string needle, int start_index = 0, int end_index = -1);
 
 	public int last_index_of_char (char c, int start_index = 0, int end_index = -1) {
+		if (end_index == -1) {
+			end_index = length;
+		}
 		return last_index_of (c.to_string (), start_index, end_index);
 	}
 

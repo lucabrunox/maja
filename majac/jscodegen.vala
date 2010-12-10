@@ -68,6 +68,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public Symbol root_symbol;
 	public Namespace javascript_ns;
+	public Class string_type;
+	public Struct char_type;
 
 	public EmitContext emit_context = new EmitContext ();
 
@@ -229,12 +231,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"char", "camelcase", "true"},
 		{"char.to_upper", "name", "\"toUpperCase\""},
 		{"char.to_lower", "name", "\"toLowerCase\""},
-		{"char.to_string", "static", "\"String.fromCharCode\""},
 		{"string", "camelcase", "true"},
+		{"string.get", "getter", "true"},
+		{"string.get_char", "name", "\"charAt\""},
 		{"string.join", "externalized", "true"},
 		{"string.to_upper", "name", "\"toUpperCase\""},
 		{"string.to_lower", "name", "\"toLowerCase\""},
+		{"string.index_of", "no_default", "true"},
+		{"string.last_index_of", "no_default", "true"},
 		{"string.contains", "externalized", "true"},
+		{"string.length", "simple_field", "true"},
 		{"Dova.Error", "camelcase", "true"},
 		{"Dova.List.get", "getter", "true"},
 		{"Dova.List.length", "simple_field", "true"}};
@@ -253,8 +259,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		this.context = context;
 
 		root_symbol = context.root;
-
 		javascript_ns = root_symbol.scope.lookup ("Javascript") as Namespace;
+		string_type = root_symbol.scope.lookup ("string") as Class;
+		char_type = root_symbol.scope.lookup ("char") as Struct;
 
 		// manually hardcode attributes until dova supports javascript on vapi generation
 		foreach (var attribute_map in dova_attributes) {
@@ -955,11 +962,20 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_cast_expression (CastExpression expr) {
-		set_jsvalue (expr, get_jsvalue (expr.inner));
+		var st = expr.inner.value_type.data_type as Struct;
+		if (st != null && st.is_integer_type () && expr.type_reference.data_type == char_type) {
+			set_jsvalue (expr, jsmember ("String.fromCharCode").call (get_jsvalue (expr.inner)));
+		} else {
+			set_jsvalue (expr, get_jsvalue (expr.inner));
+		}
 	}
 
 	public override void visit_type_check (TypeCheck expr) {
-		set_jsvalue (expr, jsexpr (get_jsvalue (expr.expression)).instanceof (jsmember (get_symbol_full_jsname (expr.type_reference.data_type))));
+		if (expr.type_reference.data_type == string_type) {
+			set_jsvalue (expr, jsexpr (get_jsvalue (expr.expression)).equal (jsstring ("string")).keyword ("typeof"));
+		} else {
+			set_jsvalue (expr, jsexpr (get_jsvalue (expr.expression)).instanceof (jsmember (get_symbol_full_jsname (expr.type_reference.data_type))));
+		}
 	}
 
 	public override void visit_switch_statement (SwitchStatement stmt) {
@@ -1076,7 +1092,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jstext ("\"%s\"".printf (value));
 	}
 
-	public JSExpressionBuilder? emit_call (CodeNode callable, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null, JSCode? first_argument = null) {
+	public JSExpressionBuilder? emit_call (Symbol callable, JSExpressionBuilder jscall, Vala.List<Expression> arguments, out bool has_out_results, CodeNode? node_reference = null, JSCode? first_argument = null) {
 		var m = callable as Method;
 		var d = callable as Delegate;
 		bool has_result;
@@ -1099,7 +1115,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		} else {
 			parameters = d.get_parameters ();
 		}
-		bool ellipsis = false;
+		var no_default = get_javascript_bool (callable, "no_default");
+		var ellipsis = false;
 		foreach (var param in parameters) {
 			if (param.ellipsis) {
 				ellipsis = true;
@@ -1118,7 +1135,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				}
 				out_results += arg_it.get ();
 			} else {
-				jsargs.add (get_jsvalue (arg_it.get ()));
+				var arg = arg_it.get ();
+				if (param.initializer == arg && no_default) {
+					break;
+				}
+				jsargs.add (get_jsvalue (arg));
 				if (param.variable_type is DelegateType) {
 					var deleg = ((DelegateType) param.variable_type).delegate_symbol;
 					var javascript = deleg.get_attribute ("Javascript");

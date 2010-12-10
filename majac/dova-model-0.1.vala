@@ -77,7 +77,10 @@ namespace Dova {
 			return ((any)key) in map;
 		}
 		public override V get (K key) {
-			return map[(any) key];
+			result = map[(any) key];
+			if (result == Javascript.undefined) {
+				result = null;
+			}
 		}
 		public void remove (K key) {
 			map.delete ((any) key);
