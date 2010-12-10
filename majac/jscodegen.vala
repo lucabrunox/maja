@@ -236,6 +236,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"string.to_lower", "name", "\"toLowerCase\""},
 		{"string.contains", "externalized", "true"},
 		{"Dova.Error", "camelcase", "true"},
+		{"Dova.List.get", "getter", "true"},
 		{"Dova.List.length", "simple_field", "true"}};
 
 	public JSCodeGenerator () {
@@ -675,11 +676,16 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			} else {
 				var member_name = get_symbol_jsname (sym);
 				var prop = sym as Property;
-				if (prop != null && !get_javascript_bool (prop, "simple_field") && (ma.inner == null || !ma.inner.value_type.is_dynamic)) {
+				if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type.is_dynamic)) {
 					jscode.member (get_symbol_jsname (prop, "get_"+member_name)).call ();
 				} else {
 					jscode.member (member_name);
 				}
+			}
+
+			if (ma.value_type is MethodType && ma.target_type != null && ((Method) ma.symbol_reference).binding == MemberBinding.INSTANCE) {
+				// bind if we're passing a method around
+				jscode = jsbind (jscode, get_jsvalue (ma.inner));
 			}
 		}
 
@@ -764,12 +770,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var ma = expr.left as MemberAccess;
 		if (ma != null) {
 			var prop = ma.symbol_reference as Property;
-			if (prop != null && !get_javascript_bool (prop, "simple_field")) {
-				var set_expr = jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name));
+			if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type.is_dynamic)) {
+				var set_expr = jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+get_symbol_jsname (prop)));
 				if (!(expr.parent_node is ExpressionStatement)) {
 					var temp = get_temp_variable_name ();
 					js.stmt (jsvar(temp).assign (get_jsvalue (expr.right)));
-					js.stmt (jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+prop.name)).call (jsmember (temp)));
+					js.stmt (jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+get_symbol_jsname (prop))).call (jsmember (temp)));
 					set_jsvalue (expr, jsmember (temp));
 				} else {
 					set_jsvalue (expr, set_expr.call (get_jsvalue (expr.right)));
@@ -1099,8 +1105,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				ellipsis = true;
 				break;
 			}
-			if (!arg_it.next ())
+			if (!arg_it.next ()) {
 				break;
+			}
 			if (param.direction != ParameterDirection.IN) {
 				var out_result = arg_it.get ();
 				if (!has_out_results) {
@@ -1233,9 +1240,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			unichar c = i.get_char ();
 			if (c == '_') {
 				last_underscore = true;
-			} else if (c.isupper ()) {
-				// original string is not lower_case, don't apply transformation
-				return lower_case;
 			} else if (last_underscore) {
 				result_builder.append_unichar (c.toupper ());
 				last_underscore = false;
@@ -1261,6 +1265,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		result = get_variable_jsname (result);
 		if (!(sym is LocalVariable) && get_javascript_bool (sym, "camelcase", true)) {
 			result = lower_case_to_camel_case (result, get_javascript_bool (sym, "first_capital", true));
+		if (result == "get_contentElement") message(result);
 		}
 		return result;
 	}

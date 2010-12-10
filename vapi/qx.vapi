@@ -1,19 +1,37 @@
 [Javascript (camelcase = true, no_maja_init = true)]
 namespace qx {
+	namespace lang {
+		public delegate any JsonTransformer (string key, any value);
+		public class Json {
+			public static Javascript.Object parse (string text, JsonTransformer? reviver = null);
+		}
+	}
+	namespace io {
+		namespace remote {
+			public class Request : core.Object {
+				public int timeout;
+				public bool prohibit_caching;
+				public Request (string url, string method = "GET", string response_type = "text/plain");
+				public void send ();
+			}
+		}
+	}
 	namespace bom {
 		public class History : qx.core.Object {
 			public static History get_instance ();
+			public string state;
 			public void add_to_history (string state, string? new_title = null);
 		}
 	}
 	namespace log {
 		public class Logger {
 			public static void unregister (any appender);
+			public static void debug (string message);
 		}
 		namespace appender {
 			public class Element : qx.core.Object {
 				[Javascript (name = "\$\$id", simple_field = true)]
-				public any id;
+				public any id { get; set; }
 				public Javascript.DOM.Element element { set; }
 				public Element (Javascript.DOM.Element? element = null);
 				public void clear ();
@@ -45,13 +63,14 @@ namespace qx {
 		}
 		public class Object {
 			public string tr (string str);
+			public void error (...);
 			public void debug (...);
 			public string add_listener (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
 			[Javascript (setter = false)]
-			public G set<T,G> (string key, T value);
+			public T set<T> (string key, T value);
 			[Javascript (name = "set")]
-			public Object set_many (Dova.Map<string,any> data);
-			public void set_user_data (string key, any value);
+			public T set_many<T> (Dova.Map<string,any> data);
+			public void set_user_data<T> (string key, T value);
 			public T get_user_data<T> (string key);
 		}
 		public class Variant {
@@ -106,12 +125,14 @@ namespace qx {
 				public string label;
 				public bool open;
 				public AbstractTreeItem parent;
+				public void add (...);
 				public Dova.List<AbstractTreeItem> get_items (bool recursive = true, bool invisible = true, bool ignore_first = true);
 			}
 			public class TreeFolder : AbstractTreeItem {
 				public TreeFolder (string? label = null);
 			}
 			public class TreeFile : AbstractTreeItem {
+				public TreeFile (string? label = null);
 			}
 		}
 		namespace toolbar {
@@ -215,7 +236,7 @@ namespace qx {
 				public string visibility;
 				public string tool_tip_text;
 				[Javascript (name = "decorator")]
-				public string decorator_name;
+				public string decorator_name { get; set; }
 				public decoration.Abstract decorator;
 				public string background_color;
 				public bool enabled;
