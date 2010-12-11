@@ -466,6 +466,7 @@ public struct decimal {
 public struct double {
 	public double ceil ();
 	public double floor ();
+	public double round ();
 	public string to_string ();
 }
 [CCode (cheader_filename = "dova-base.h")]

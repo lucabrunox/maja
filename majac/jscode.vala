@@ -122,6 +122,11 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
+	public JSExpressionBuilder div (JSCode code) {
+		current = new JSOperation (current, " / ", code, true);
+		return this;
+	}
+
 	public JSExpressionBuilder direct_equal (JSCode code) {
 		current = new JSOperation (current, " === ", code, true);
 		return this;

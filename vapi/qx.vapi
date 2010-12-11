@@ -1,5 +1,17 @@
 [Javascript (camelcase = true, no_maja_init = true)]
 namespace qx {
+	namespace fx {
+		public class Base : core.Object {
+			public void start ();
+		}
+		namespace effect {
+			namespace combination {
+				public class Shake : fx.Base {
+					public Shake (Javascript.DOM.Element element);
+				}
+			}
+		}
+	}
 	namespace lang {
 		public delegate any JsonTransformer (string key, any value);
 		public class Json {
@@ -40,6 +52,7 @@ namespace qx {
 	}
 	namespace html {
 		public class Element : qx.core.Object {
+			public Javascript.DOM.Element dom_element { get; } 
 			public void set_attribute (string key, string value, bool direct = false);
 			public void use_element (Javascript.DOM.Element element);
 		}
@@ -67,9 +80,9 @@ namespace qx {
 			public void debug (...);
 			public string add_listener (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
 			[Javascript (setter = false)]
-			public T set<T> (string key, T value);
+			public Object set<T> (string key, T value);
 			[Javascript (name = "set")]
-			public T set_many<T> (Dova.Map<string,any> data);
+			public Object set_many (Dova.Map<string,any> data);
 			public void set_user_data<T> (string key, T value);
 			public T get_user_data<T> (string key);
 		}
@@ -78,6 +91,13 @@ namespace qx {
 		}
 	}
 	namespace ui {
+		namespace groupbox {
+			public class GroupBox : core.Widget {
+				public layout.Abstract layout;
+				public GroupBox ();
+				public void add (core.LayoutItem child, Dova.Map<string,any>? options = null);
+			}
+		}
 		namespace decoration {
 			public class Abstract : qx.core.Object {
 			}
@@ -215,6 +235,9 @@ namespace qx {
 			public class TextField : AbstractField {
 				public TextField (string? value = null);
 			}
+			public class PasswordField : TextField {
+				public PasswordField (string? value = null);
+			}
 		}
 		namespace core {
 			namespace scroll {
@@ -225,10 +248,22 @@ namespace qx {
 				public Command (string shortcut);
 			}
 			public class LayoutItem : qx.core.Object {
+				public class Bounds {
+					[Javascript (simple_field = true)]
+					public int width { get; set; }
+					[Javascript (simple_field = true)]
+					public int height { get; set; }
+					[Javascript (simple_field = true)]
+					public int left { get; set; }
+					[Javascript (simple_field = true)]
+					public int top { get; set; }
+				}
 				public int min_width;
 				public int width;
 				public int margin;
 				public bool allow_grow_x;
+				public bool allow_stretch_x;
+				public Bounds bounds;
 			}
 			public class Widget : LayoutItem {
 				public string font;
@@ -241,6 +276,7 @@ namespace qx {
 				public string background_color;
 				public bool enabled;
 				public html.Element content_element { get; }
+				public html.Element container_element { get; }
 
 				public bool is_visible ();
 				public void exclude ();
@@ -263,6 +299,10 @@ namespace qx {
 				public string separator;
 
 				public HBox (int spacing = 0, string align_y = "left", string? separator = null);
+			}
+			public class Grid : Abstract {
+				public Grid (int spacing_x = 0, int spacing_y = 0);
+				public void set_column_align (int column, string h_align, string v_align);
 			}
 		}
 	}

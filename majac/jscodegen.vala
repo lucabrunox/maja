@@ -232,6 +232,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"char", "camelcase", "true"},
 		{"char.to_upper", "name", "\"toUpperCase\""},
 		{"char.to_lower", "name", "\"toLowerCase\""},
+		{"double.round", "static", "\"Math.round\""},
 		{"string", "camelcase", "true"},
 		{"string.get", "getter", "true"},
 		{"string.get_char", "name", "\"charAt\""},
@@ -374,7 +375,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 
 		push_context (namespace_decl_context);
-		js.stmt (jsvar (ns.get_full_name ()));
+		if (ns.parent_symbol == root_symbol) {
+			js.stmt (jsvar (ns.get_full_name ()));
+		}
 		js.open_if (jsmember (ns.get_full_name ()).direct_equal (jsundefined ()));
 		js.stmt (jsmember (ns.get_full_name ()).assign (jsobject ()));
 		js.close ();
@@ -587,6 +590,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			break;
 		case BinaryOperator.IN:
 			jscode.contained_in (jsright);
+			break;
+		case BinaryOperator.DIV:
+			jscode.div (jsright);
 			break;
 		default:
 			assert_not_reached ();

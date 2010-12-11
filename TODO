@@ -1,0 +1,10 @@
+* In no particularly order (many need a bug report):
+- Support structs as simple classes with simple fields
+- Dova try/catch spits criticals
+- Add more methods to Dova.List, Dova.Array and dova model in general so we can use them instead of javascript native collections
+- Add double.round() method to dova, and other methods from javascript Math
+- Fix https://bugzilla.gnome.org/show_bug.cgi?id=636957
+- Let libvala spit less temporary variables on method calls
+- Support int operation semantics as javascript numbers are all floating point
+- Read and implement some of http://www.merlyn.demon.co.uk/js-logic.htm,
+  even for optimizing space using obscure operators
