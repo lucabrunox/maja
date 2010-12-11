@@ -205,6 +205,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 	public EmitContext namespace_decl_context;
 	public EmitContext decl_context;
+	public EmitContext static_decl_context;
 	public EmitContext base_init_context;
 
 	public JSBlockBuilder js { get { return emit_context.js; } }
@@ -301,6 +302,14 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		jsblock.no_semicolon = true;
 		jsfile.statements.add (jsblock);
 		push_function (new JSBlockBuilder (jsblock));
+
+		static_decl_context = new EmitContext ();
+		push_context (static_decl_context);
+		jsblock = new JSBlock ();
+		jsblock.no_semicolon = true;
+		jsfile.statements.add (jsblock);
+		push_function (new JSBlockBuilder (jsblock));
+		pop_context ();
 
 		root_symbol.accept_children (this);
 
@@ -704,16 +713,21 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			return;
 		}
 
+		JSCode rhs = null;
+		if (field.initializer != null) {
+			field.initializer.emit (this);
+			rhs = get_jsvalue (field.initializer);
+		} else {
+			rhs = jsnull ();
+		}
+
 		if (field.binding == MemberBinding.INSTANCE) {
 			push_context (base_init_context);
-			JSCode rhs = null;
-			if (field.initializer != null) {
-				field.initializer.emit (this);
-				rhs = get_jsvalue (field.initializer);
-			} else {
-				rhs = jsnull ();
-			}
-			js.stmt (jsmember("this").member(field.name).assign (rhs));
+			js.stmt (jsmember ("this").member (field.name).assign (rhs));
+			pop_context ();
+		} else {
+			push_context (static_decl_context);
+			js.stmt (jsmember (get_symbol_full_jsname (field)).assign (rhs));
 			pop_context ();
 		}
 	}
