@@ -8,3 +8,4 @@
 - Support int operation semantics as javascript numbers are all floating point
 - Read and implement some of http://www.merlyn.demon.co.uk/js-logic.htm,
   even for optimizing space using obscure operators
+- Do not use {...} syntax to create map literals

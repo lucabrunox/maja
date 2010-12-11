@@ -1160,12 +1160,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 					break;
 				}
 				jsargs.add (get_jsvalue (arg));
-				if (param.variable_type is DelegateType) {
-					var deleg = ((DelegateType) param.variable_type).delegate_symbol;
-					var javascript = deleg.get_attribute ("Javascript");
-					if (javascript != null && javascript.get_bool ("has_this_parameter")) {
-						jsargs.add (jsnull ());
-					}
+				if (param.variable_type is DelegateType && get_javascript_bool (param, "has_this_parameter")) {
+					jsargs.add (jsnull ());
 				}
 			}
 		}

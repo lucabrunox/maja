@@ -5,9 +5,20 @@ namespace qx {
 			public void start ();
 		}
 		namespace effect {
+			namespace core {
+				public class Fade : fx.Base {
+					public Fade (Javascript.DOM.Element element);
+				}
+			}
 			namespace combination {
 				public class Shake : fx.Base {
 					public Shake (Javascript.DOM.Element element);
+				}
+				public class Shrink : fx.Base {
+					public Shrink (Javascript.DOM.Element element);
+				}
+				public class Grow : fx.Base {
+					public Grow (Javascript.DOM.Element element);
 				}
 			}
 		}
@@ -29,6 +40,11 @@ namespace qx {
 		}
 	}
 	namespace bom {
+		namespace client {
+			public class Engine {
+				public static const bool MSHTML;
+			}
+		}
 		public class History : qx.core.Object {
 			public static History get_instance ();
 			public string state;
@@ -79,8 +95,9 @@ namespace qx {
 			public void error (...);
 			public void debug (...);
 			public string add_listener (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
+			public string add_listener_once (string type, [Javascript (has_this_parameter = true)] qx.event.Callback listener, bool capture = false);
 			[Javascript (setter = false)]
-			public Object set<T> (string key, T value);
+			public T set<T> (string key, T value);
 			[Javascript (name = "set")]
 			public Object set_many (Dova.Map<string,any> data);
 			public void set_user_data<T> (string key, T value);
@@ -195,6 +212,7 @@ namespace qx {
 			public class Label : core.Widget {
 				public string text_align;
 				public string value;
+				public bool rich;
 
 				public Label (string value);
 			}
@@ -217,6 +235,9 @@ namespace qx {
 			}
 		}
 		namespace form {
+			public class TextArea : form.AbstractField {
+				public TextArea (string value = "");
+			}
 			public class Button : basic.Atom {
 				public Button (string label, string? icon = null, core.Command? command = null);
 			}
@@ -277,6 +298,7 @@ namespace qx {
 				public bool enabled;
 				public html.Element content_element { get; }
 				public html.Element container_element { get; }
+				public int z_index;
 
 				public bool is_visible ();
 				public void exclude ();
@@ -303,6 +325,9 @@ namespace qx {
 			public class Grid : Abstract {
 				public Grid (int spacing_x = 0, int spacing_y = 0);
 				public void set_column_align (int column, string h_align, string v_align);
+				public void set_row_align (int row, string h_align, string v_align);
+				public void set_column_width (int column, int width);
+				public void set_row_height (int row, int height);
 			}
 		}
 	}
