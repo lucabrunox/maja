@@ -243,7 +243,13 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"string.last_index_of", "no_default", "true"},
 		{"string.contains", "externalized", "true"},
 		{"string.length", "simple_field", "true"},
+		{"Dova.print", "static", "\"print\""},
 		{"Dova.Error", "camelcase", "true"},
+		{"Dova.Set.contains", "externalized", "true"},
+		{"Dova.Set.iterator", "externalized", "true"},
+		{"Dova.Map.get", "getter", "true"},
+		{"Dova.Map.keys", "externalized", "true"},
+		{"Dova.Map.values", "externalized", "true"},
 		{"Dova.List.get", "getter", "true"},
 		{"Dova.List.length", "simple_field", "true"}};
 
@@ -693,16 +699,22 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				jscode = jsexpr ();
 			}
 
+			var member_name = get_symbol_jsname (sym);
+			var prop = sym as Property;
+			var call = false;
+			if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type.is_dynamic)) {
+				call = true;
+				member_name = get_symbol_jsname (sym, "get_"+member_name);
+			}
+
 			if (get_javascript_bool (sym, "externalized")) {
-				jscode = jsbind (jsmember (get_symbol_full_jsname (sym)), get_jsvalue (ma.inner));
+				jscode = jsbind (jsmember (get_symbol_full_jsname (sym, member_name)), get_jsvalue (ma.inner));
 			} else {
-				var member_name = get_symbol_jsname (sym);
-				var prop = sym as Property;
-				if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type.is_dynamic)) {
-					jscode.member (get_symbol_jsname (prop, "get_"+member_name)).call ();
-				} else {
-					jscode.member (member_name);
-				}
+				jscode.member (member_name);
+			}
+
+			if (call) {
+				jscode.call ();
 			}
 
 			if (ma.value_type is MethodType && ma.target_type != null && ((Method) ma.symbol_reference).binding == MemberBinding.INSTANCE) {
@@ -765,7 +777,11 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			name = get_symbol_jsname (acc, "set_"+name);
 		}
 		push_context (decl_context);
-		js.stmt (jsmember (acc.parent_symbol.parent_symbol.get_full_name ()).member ("prototype").member (name).assign (func));
+		var member = jsmember (acc.parent_symbol.parent_symbol.get_full_name ());
+		if (!get_javascript_bool (acc.parent_symbol, "externalized")) {
+			member.member ("prototype");
+		}
+		js.stmt (member.member (name).assign (func));
 		pop_context ();
 	}
 
@@ -781,13 +797,9 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			return;
 
 		JSExpressionBuilder jscode;
-		if (get_javascript_bool (cl, "native_array")) {
-			jscode = jsexpr (jslist (true));
-		} else {
-			expr.member_name.emit (this);
-			jscode = jsexpr (get_jsvalue (expr.member_name));
-			jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr).keyword ("new");
-		}
+		expr.member_name.emit (this);
+		jscode = jsexpr (get_jsvalue (expr.member_name));
+		jscode = emit_call ((CreationMethod) expr.symbol_reference, jscode, expr.get_argument_list (), null, expr).keyword ("new");
 		set_jsvalue (expr, jscode);
 	}
 
@@ -937,6 +949,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_map_literal (MapLiteral expr) {
+		if (expr.map_key_type.data_type != string_type) {
+			Report.error (expr.source_reference, "Map only support string keys");
+			return;
+		}
 		var jsobj = jsobject ();
 		var key_it = expr.get_keys ().iterator ();
 		var value_it = expr.get_values ().iterator ();
@@ -1307,12 +1323,12 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return result;
 	}
 
-	public string get_symbol_full_jsname (Symbol sym) {
-		var name = get_symbol_jsname (sym);
+	public string get_symbol_full_jsname (Symbol sym, string? name = null) {
+		var result = get_symbol_jsname (sym, name);
 		if (sym.parent_symbol != null && sym.parent_symbol != javascript_ns && sym.parent_symbol != root_symbol) {
-			name = "%s.%s".printf (get_symbol_full_jsname (sym.parent_symbol), name);
+			result = "%s.%s".printf (get_symbol_full_jsname (sym.parent_symbol), result);
 		}
-		return name;
+		return result;
 	}
 
 	public string get_variable_jsname (string name) {

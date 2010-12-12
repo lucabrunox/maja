@@ -43,7 +43,7 @@ namespace Dova {
 			return array[index];
 		}
 		public override Dova.Iterator<T> iterator () {
-			return new Iterator<T> (this);
+			return (Dova.Iterator<T>) array.iterator ();
 		}
 		public extern override bool remove (T element);
 		public override void set (int index, T element) {
@@ -67,27 +67,12 @@ namespace Dova {
 		public abstract void push_head (T element);
 		public abstract void push_tail (T element);
 	}
-	[CCode (cheader_filename = "dova-model.h")]
 	public class HashMap<K,V> : Dova.MapModel<K,V> {
-		private Javascript.Object map;
-		public HashMap () {
-			map = new Javascript.Object ();
-		}
-		public bool contains_key (K key) {
-			return ((any)key) in map;
-		}
-		public override V get (K key) {
-			result = map[(any) key];
-			if (result == Javascript.undefined) {
-				result = null;
-			}
-		}
-		public void remove (K key) {
-			map.delete ((any) key);
-		}
-		public override void set (K key, V value) {
-			map[(any) key] = (any) value;
-		}
+		public HashMap ();
+		public extern bool contains_key (K key);
+		public extern override V get (K key);
+		public extern void remove (K key);
+		public extern override void set (K key, V value);
 		public extern Dova.Iterable<K> keys { get; private set; }
 		public extern int size { get; private set; }
 		public extern Dova.Iterable<V> values { get; private set; }

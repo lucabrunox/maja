@@ -1,13 +1,39 @@
 [Javascript (camelcase = true, no_maja_init = true)]
 namespace qx {
+	namespace util {
+		public class ColorUtil {
+			public static int[] css_string_to_rgb (string str);
+		}
+	}
 	namespace fx {
 		public class Base : core.Object {
 			public void start ();
+		}
+		namespace queue {
+			public class Queue {
+				public int limit;
+			}
+			public class Manager {
+				public Queue default_queue { get; }
+				public static Manager instance { get; }
+			}
 		}
 		namespace effect {
 			namespace core {
 				public class Fade : fx.Base {
 					public Fade (Javascript.DOM.Element element);
+				}
+				public class Scroll : fx.Base {
+					public Scroll (Javascript.DOM.Element element);
+				}
+				public class Scale : fx.Base {
+					public Scale (Javascript.DOM.Element element);
+				}
+				public class Move : fx.Base {
+					public Move (Javascript.DOM.Element element);
+				}
+				public class Highlight : fx.Base {
+					public Highlight (Javascript.DOM.Element element);
 				}
 			}
 			namespace combination {
@@ -20,6 +46,28 @@ namespace qx {
 				public class Grow : fx.Base {
 					public Grow (Javascript.DOM.Element element);
 				}
+				public class ColorFlow : fx.Base {
+					public ColorFlow (Javascript.DOM.Element element);
+				}
+				public class Pulsate : fx.Base {
+					public Pulsate (Javascript.DOM.Element element);
+				}
+				public class Puff : fx.Base {
+					public bool modify_display;
+					public Puff (Javascript.DOM.Element element);
+				}
+				public class Drop : fx.Base {
+					public string mode;
+					public Drop (Javascript.DOM.Element element);
+				}
+				public class Fold : fx.Base {
+					public string mode;
+					public Fold (Javascript.DOM.Element element);
+				}
+				public class Switch : fx.Base {
+					public bool modify_display;
+					public Switch (Javascript.DOM.Element element);
+				}
 			}
 		}
 	}
@@ -27,6 +75,9 @@ namespace qx {
 		public delegate any JsonTransformer (string key, any value);
 		public class Json {
 			public static Javascript.Object parse (string text, JsonTransformer? reviver = null);
+		}
+		public class Function {
+			public static void delay (Javascript.Callback func, int delay);
 		}
 	}
 	namespace io {
@@ -40,6 +91,17 @@ namespace qx {
 		}
 	}
 	namespace bom {
+		namespace element {
+			public class Style {
+				public static T get<T> (Javascript.DOM.Element element, string key);
+			}
+			public class Dimension {
+				public static double get_width (Javascript.DOM.Element element);
+			}
+			public class Location {
+				public static double get_left (Javascript.DOM.Element element);
+			}
+		}
 		namespace client {
 			public class Engine {
 				public static const bool MSHTML;
@@ -111,7 +173,7 @@ namespace qx {
 		namespace groupbox {
 			public class GroupBox : core.Widget {
 				public layout.Abstract layout;
-				public GroupBox ();
+				public GroupBox (string legend = "", string icon = "");
 				public void add (core.LayoutItem child, Dova.Map<string,any>? options = null);
 			}
 		}
@@ -239,6 +301,7 @@ namespace qx {
 				public TextArea (string value = "");
 			}
 			public class Button : basic.Atom {
+				public string label;
 				public Button (string label, string? icon = null, core.Command? command = null);
 			}
 			public class RadioGroup : qx.core.Object {
@@ -271,13 +334,13 @@ namespace qx {
 			public class LayoutItem : qx.core.Object {
 				public class Bounds {
 					[Javascript (simple_field = true)]
-					public int width { get; set; }
+					public double width { get; set; }
 					[Javascript (simple_field = true)]
-					public int height { get; set; }
+					public double height { get; set; }
 					[Javascript (simple_field = true)]
-					public int left { get; set; }
+					public double left { get; set; }
 					[Javascript (simple_field = true)]
-					public int top { get; set; }
+					public double top { get; set; }
 				}
 				public int min_width;
 				public int width;
@@ -328,6 +391,9 @@ namespace qx {
 				public void set_row_align (int row, string h_align, string v_align);
 				public void set_column_width (int column, int width);
 				public void set_row_height (int row, int height);
+			}
+			public class Grow : Abstract {
+				public class Grow ();
 			}
 		}
 	}

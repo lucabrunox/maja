@@ -28,17 +28,25 @@ namespace Javascript {
 		[Javascript (copy = true)]
 		public T copy<T> ();
 		[Javascript (getter = true)]
-		public any get (any key);
+		public any get (string key);
 		[Javascript (setter = true)]
-		public void set (any key, any value);
+		public void set<V> (string key, V value);
 		[Javascript (delete = true)]
-		public void delete (any key);
+		public void delete (string key);
+		[Javascript (static = "Maja.get_keys")]
+		public Javascript.Array<T> js_keys<T> ();
+		[Javascript (static = "Maja.get_values")]
+		public Javascript.Array<T> js_values<T> ();
 	}
 
 	public delegate int CompareFunc<T> (T a, T b);
 
-	[Javascript (native_array = true)]
 	public class Array<T> : Object {
+		public class Iterator<T> {
+			public bool next ();
+			public T get ();
+		}
+
 		public Array (...);
 
 		public int index_of (T element);
@@ -57,6 +65,8 @@ namespace Javascript {
 		[Javascript (no_default = true)]
 		public Javascript.Array<T> slice (int start, int? end = null);
 		public void sort (CompareFunc<T> compare_func);
+		[Javascript (static = "Maja.array_iterator")]
+		public Iterator<T> iterator ();
 	}
 
 	public class String {
@@ -103,6 +113,7 @@ namespace Javascript {
 			public Element create_element (string name);
 			public Node create_text_node (string text);
 			public Element[] get_elements_by_tag_name (string name);
+			public Element get_element_by_id (string id);
 		}
 
 		public class Node {

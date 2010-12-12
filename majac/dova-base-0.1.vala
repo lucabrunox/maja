@@ -221,13 +221,37 @@ public class string : Dova.Value {
 	public extern string to_lower ();
 	public extern string replace (string old, string replacement);
 }
-
 public class Dova.List<T> : Object {
 	public extern Dova.List<T> concat (Dova.List<T> list2);
 	public extern int length { get; private set; }
 	public extern T get (int index);
 }
-
+public class Dova.Set<T> : Dova.Object {
+	public bool contains (T element) {
+		var array = (Javascript.Array<T>) this;
+		for (var i=0; i < array.length; i++) {
+			if (array[i].equals ((any) element)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	public Dova.Iterator<T> iterator () {
+		return (Dova.Iterator<T>) ((Javascript.Array<T>) this).iterator ();
+	}
+}
+public class Dova.Map<K,V> : Dova.Object {
+	public Dova.Set<K> keys { get {
+			var array = ((Javascript.Object) this).js_keys<K> ();
+			return (Dova.Set<K>) array;
+		}
+	}
+	public Dova.Set<V> values { get {
+			var array = ((Javascript.Object) this).js_values<V> ();
+			return (Dova.Set<V>) array;
+		}
+	}
+}
 public class Dova.Tuple<T> : Object {
 	public extern int length { get; private set; }
 	public extern T get (int index);
