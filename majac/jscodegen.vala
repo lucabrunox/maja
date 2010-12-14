@@ -1033,6 +1033,18 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		}
 	}
 
+	public override void visit_constant (Constant c) {
+		if (c.external) {
+			return;
+		}
+
+		c.accept_children (this);
+
+		JSCode rhs = null;
+		push_context (decl_context);
+		js.stmt (jsmember (get_symbol_full_jsname (c)).assign (get_jsvalue (c.value)));
+	}
+
 	public JSCode generate_method (Method m) {
 		push_context (new EmitContext (m));
 

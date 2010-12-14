@@ -30,6 +30,7 @@ void test_captured_loop () {
 
 public class Foo {
 	public Bar bar;
+	public const int CONST = 3;
 
 	public Foo (Bar bar) {
 		this.bar = bar;
@@ -47,8 +48,13 @@ void test_block_capture () {
 	}
 }
 
+void test_constant () {
+	assert (Foo.CONST == 3);
+}
+
 void main () {
 	test_switch ();
 	test_captured_loop ();
 	test_block_capture ();
+	test_constant ();
 }
