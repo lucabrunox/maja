@@ -251,6 +251,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"Dova.Map.keys", "externalized", "true"},
 		{"Dova.Map.values", "externalized", "true"},
 		{"Dova.List.get", "getter", "true"},
+		{"Dova.List.iterator", "static", "\"Maja.array_iterator\""},
 		{"Dova.List.length", "simple_field", "true"}};
 
 	public JSCodeGenerator () {

@@ -96,6 +96,8 @@ namespace Javascript {
 	public class Window {
 		[Javascript (simple_field = true)]
 		public Location location { get; set; }
+		[Javascript (simple_field = true)]
+		public EventCallback onload { get; set; }
 		public int set_timeout (Callback callback, int interval);
 		public void open (string url, string mode);
 	}
@@ -112,7 +114,7 @@ namespace Javascript {
 
 			public Element create_element (string name);
 			public Node create_text_node (string text);
-			public Element[] get_elements_by_tag_name (string name);
+			public Dova.List<Element> get_elements_by_tag_name (string name);
 			public Element get_element_by_id (string id);
 		}
 

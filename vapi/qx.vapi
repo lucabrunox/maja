@@ -1,6 +1,12 @@
 [Javascript (camelcase = true, no_maja_init = true)]
 namespace qx {
 	namespace util {
+		namespace format {
+			public class NumberFormat {
+				public int maximum_fraction_digits;
+				public NumberFormat ();
+			}
+		}
 		public class ColorUtil {
 			public static int[] css_string_to_rgb (string str);
 		}
@@ -256,6 +262,8 @@ namespace qx {
 		}
 		namespace embed {
 			public class Html : core.Widget {
+				public string css_class;
+				public string html;
 				public Html (string? html = null);
 				public void set_overflow (string overflow_x, string overflow_y);
 			}
@@ -270,6 +278,7 @@ namespace qx {
 		}
 		namespace basic {
 			public class Atom : core.Widget {
+				public string label;
 			}
 			public class Label : core.Widget {
 				public string text_align;
@@ -321,6 +330,21 @@ namespace qx {
 			}
 			public class PasswordField : TextField {
 				public PasswordField (string? value = null);
+			}
+			public class ListItem : basic.Atom {
+				public ListItem (string label, string? icon = null, string? model = null);
+			}
+			public class AbstractSelectBox : core.Widget {
+				public void add (ListItem list_item, Dova.Map<string,any>? options = null);
+			}
+			public class SelectBox : AbstractSelectBox {
+				public Dova.List<ListItem> selection;
+				public SelectBox ();
+			}
+			public class Spinner : core.Widget {
+				public double value;
+				public qx.util.format.NumberFormat number_format;
+				public Spinner ();
 			}
 		}
 		namespace core {
