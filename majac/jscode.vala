@@ -61,11 +61,6 @@ public class Maja.JSExpressionBuilder : JSCode {
 		return this;
 	}
 
-	public JSExpressionBuilder object_literal () {
-		current = new JSObjectLiteral ();
-		return this;
-	}
-
 	public JSExpressionBuilder string_literal (string text) {
 		current = new JSText ("\"%s\"".printf (text));
 		return this;
@@ -212,12 +207,6 @@ public class Maja.JSExpressionBuilder : JSCode {
 
 	public override void write (JSWriter writer) {
 		current.write (writer);
-	}
-}
-
-public class Maja.JSObjectLiteral : JSCode {
-	public override void write (JSWriter writer) {
-		writer.write_string ("{}");
 	}
 }
 

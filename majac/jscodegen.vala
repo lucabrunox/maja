@@ -634,6 +634,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		set_jsvalue (expr, jstext (expr.value + expr.type_suffix));
 	}
 
+	public override void visit_real_literal (RealLiteral expr) {
+		set_jsvalue (expr, jstext (expr.value));
+	}
+
 	public override void visit_boolean_literal (BooleanLiteral expr) {
 		set_jsvalue (expr, jstext (expr.value ? "true" : "false"));
 	}
@@ -703,7 +707,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			var member_name = get_symbol_jsname (sym);
 			var prop = sym as Property;
 			var call = false;
-			if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type.is_dynamic)) {
+			if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type != null && ma.inner.value_type.is_dynamic)) {
 				call = true;
 				member_name = get_symbol_jsname (sym, "get_"+member_name);
 			}
@@ -810,7 +814,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var ma = expr.left as MemberAccess;
 		if (ma != null) {
 			var prop = ma.symbol_reference as Property;
-			if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type.is_dynamic)) {
+			if (prop != null && !get_javascript_bool (prop, "simple_field") && !(ma.inner != null && ma.inner.value_type != null && ma.inner.value_type.is_dynamic)) {
 				var set_expr = jsexpr(get_jsvalue (ma.inner)).member (get_symbol_jsname (prop, "set_"+get_symbol_jsname (prop)));
 				if (!(expr.parent_node is ExpressionStatement)) {
 					var temp = get_temp_variable_name ();
@@ -1040,7 +1044,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 
 		c.accept_children (this);
 
-		JSCode rhs = null;
 		push_context (decl_context);
 		js.stmt (jsmember (get_symbol_full_jsname (c)).assign (get_jsvalue (c.value)));
 	}
