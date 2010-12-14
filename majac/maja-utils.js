@@ -24,11 +24,6 @@ Maja.array = function (sizes) {
 Maja.array_iterator = function (array) {
     return new Maja.ArrayIterator (array);
 };
-Maja.to_string = function () {
-    if (typeof this == "string")
-	return this;
-    return this.to_string ();
-};
 Maja.get_keys = function (obj) {
     var res = [];
     for (var k in obj) {

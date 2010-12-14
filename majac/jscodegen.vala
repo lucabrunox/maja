@@ -1318,7 +1318,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		result = get_variable_jsname (result);
 		if (!(sym is LocalVariable) && get_javascript_bool (sym, "camelcase", true)) {
 			result = lower_case_to_camel_case (result, get_javascript_bool (sym, "first_capital", true));
-		if (result == "get_contentElement") message(result);
 		}
 		return result;
 	}
