@@ -8,27 +8,27 @@ namespace Dova {
 			this.document = document;
 		}
 
-		public DOM.Element createElement (string name, List<DOM.Node>? children = null, Map<string,any>? attributes = null) {
-			var element = document.createElement (name);
+		public DOM.Element create_element (string name, List<DOM.Node>? children = null, Map<string,any>? attributes = null) {
+			var element = document.create_element (name);
 			if (children != null) {
 				foreach (var child in children) {
-					element.appendChild (child);
+					element.append_child (child);
 				}
 			}
 			if (attributes != null) {
 				foreach (var key in attributes.keys) {
-					element.setAttribute (key, attributes[key]);
+					element.set_attribute (key, attributes[key]);
 				}
 			}
 			return element;
 		}
 
 		public DOM.Element h1 (List<DOM.Node>? children = null, Map<string,any>? attributes = null) {
-			return createElement ("h1", children, attributes);
+			return create_element ("h1", children, attributes);
 		}
 
 		public DOM.Node text (string text) {
-			return document.createTextNode (text);
+			return document.create_text_node (text);
 		}
 	}
 }

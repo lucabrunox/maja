@@ -232,6 +232,16 @@ class Maja.Compiler {
 			vapi_filename = "%s.vapi".printf (library);
 		}
 
+		if (vapi_filename != null) {
+			var interface_writer = new CodeWriter ();
+
+			// put .vapi file in current directory unless -d has been explicitly specified
+			if (directory != null && !Path.is_absolute (vapi_filename)) {
+				vapi_filename = "%s%c%s".printf (context.directory, Path.DIR_SEPARATOR, vapi_filename);
+			}
+			interface_writer.write_file (context, vapi_filename);
+		}
+
 		return quit ();
 	}
 
