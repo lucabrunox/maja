@@ -1234,53 +1234,53 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public bool get_javascript_bool (Symbol sym, string argument, bool inherit_parent = false) {
-		var result = false;
-		if (!inherit_parent) {
-			var javascript = sym.get_attribute ("Javascript");
-			if (javascript != null && javascript.has_argument (argument)) {
-				return javascript.get_bool (argument);
-			}
-			var cl = sym as Class;
-			if (cl != null && cl.base_class != null) {
-				result = get_javascript_bool (cl.base_class, argument, inherit_parent);
-			}
-		} else {
-			var cur = sym;
+		var javascript = sym.get_attribute ("Javascript");
+		if (javascript != null && javascript.has_argument (argument)) {
+			return javascript.get_bool (argument);
+		}
+
+		if (inherit_parent) {
+			var cur = sym.parent_symbol;
 			while (cur != null) {
-				var javascript = cur.get_attribute ("Javascript");
+				javascript = cur.get_attribute ("Javascript");
 				if (javascript != null && javascript.has_argument (argument)) {
-					result = javascript.get_bool (argument);
-					break;
+					return javascript.get_bool (argument);
 				}
 				cur = cur.parent_symbol;
 			}
 		}
-		return result;
+
+		// inherit from base
+		var cl = sym as Class;
+		if (cl != null && cl.base_class != null) {
+			return get_javascript_bool (cl.base_class, argument, inherit_parent);
+		}
+		return false;
 	}
 
 	public string? get_javascript_string (Symbol sym, string argument, bool inherit_parent = false) {
-		string result = null;
-		if (!inherit_parent) {
-			var javascript = sym.get_attribute ("Javascript");
-			if (javascript != null && javascript.has_argument (argument)) {
-				return javascript.get_string (argument);
-			}
-			var cl = sym as Class;
-			if (cl != null && cl.base_class != null) {
-				result = get_javascript_string (cl.base_class, argument, inherit_parent);
-			}
-		} else {
-			var cur = sym;
+		var javascript = sym.get_attribute ("Javascript");
+		if (javascript != null && javascript.has_argument (argument)) {
+			return javascript.get_string (argument);
+		}
+
+		if (inherit_parent) {
+			var cur = sym.parent_symbol;
 			while (cur != null) {
-				var javascript = cur.get_attribute ("Javascript");
+				javascript = cur.get_attribute ("Javascript");
 				if (javascript != null && javascript.has_argument (argument)) {
-					result = javascript.get_string (argument);
-					break;
+					return javascript.get_string (argument);
 				}
 				cur = cur.parent_symbol;
 			}
 		}
-		return result;
+
+		// inherit from base
+		var cl = sym as Class;
+		if (cl != null && cl.base_class != null) {
+			return get_javascript_string (cl.base_class, argument, inherit_parent);
+		}
+		return null;
 	}
 
 	/* copied from Vala.Symbol.lower_case_to_camel_case */
