@@ -72,6 +72,11 @@ namespace Javascript {
 	public class String {
 		[Javascript (no_default = true)]
 		public string substring (int from, int? to = null);
+		public string replace (string text, string replacement);
+		[Javascript (name = "replace")]
+		public string replace_regexp (RegExp regexp, string replacement);
+		[Javascript (name = "replace")]
+		public string replace_regexp_func (RegExp regexp, RegexpCallback matchfunc);
 	}
 
 	public class Event {
@@ -79,6 +84,7 @@ namespace Javascript {
 
 	public delegate void Callback ();
 	public delegate bool EventCallback (Event? event);
+	public delegate string RegexpCallback (...);
 
 	public void alert (any object);
 

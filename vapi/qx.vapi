@@ -1,6 +1,18 @@
 [Javascript (camelcase = true, no_maja_init = true)]
 namespace qx {
+	namespace dev {
+		public class Tokenizer {
+			public static string java_script_to_html (string java_script_text);
+		}
+	}
 	namespace util {
+		public class StringBuilder {
+			public StringBuilder (...);
+			public StringBuilder.with_length (int length);
+			public void add (...); 
+			public string get ();
+			public void clear ();
+		}
 		namespace format {
 			public class NumberFormat {
 				public int maximum_fraction_digits;
@@ -97,6 +109,9 @@ namespace qx {
 		}
 	}
 	namespace bom {
+		public class String {
+			public static string escape (string str);
+		}
 		namespace element {
 			public class Style {
 				public static T get<T> (Javascript.DOM.Element element, string key);

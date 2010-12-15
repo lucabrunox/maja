@@ -245,6 +245,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"string.contains", "externalized", "true"},
 		{"string.length", "simple_field", "true"},
 		{"Dova.print", "static", "\"print\""},
+		{"Dova.Array.length", "simple_field", "true"},
 		{"Dova.Error", "camelcase", "true"},
 		{"Dova.Set.contains", "externalized", "true"},
 		{"Dova.Set.iterator", "externalized", "true"},
@@ -253,7 +254,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"Dova.Map.values", "externalized", "true"},
 		{"Dova.List.get", "getter", "true"},
 		{"Dova.List.iterator", "static", "\"Maja.array_iterator\""},
-		{"Dova.List.length", "simple_field", "true"}};
+		{"Dova.List.length", "simple_field", "true"}
+	};
 
 	public JSCodeGenerator () {
         // TODO:
@@ -636,6 +638,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void visit_real_literal (RealLiteral expr) {
+		set_jsvalue (expr, jstext (expr.value));
+	}
+
+	public override void visit_character_literal (CharacterLiteral expr) {
 		set_jsvalue (expr, jstext (expr.value));
 	}
 
@@ -1336,7 +1342,6 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			}
 			result = sym.name;
 		}
-		result = get_variable_jsname (result);
 		if (!(sym is LocalVariable) && get_javascript_bool (sym, "camelcase", true)) {
 			result = lower_case_to_camel_case (result, get_javascript_bool (sym, "first_capital", true));
 		}
