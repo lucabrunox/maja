@@ -227,8 +227,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	public DataType void_type = new VoidType ();
 
 	const AttributeMap[] dova_attributes = {
-		{"any", "camelcase", "true"},
 		{"any.equals", "externalized", "true"},
+		{"any.to_string", "camelcase", "true"},
 		{"char", "camelcase", "true"},
 		{"char.to_upper", "name", "\"toUpperCase\""},
 		{"char.to_lower", "name", "\"toLowerCase\""},
