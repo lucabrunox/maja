@@ -28,9 +28,9 @@ namespace Javascript {
 		[Javascript (copy = true)]
 		public T copy<T> ();
 		[Javascript (getter = true)]
-		public any get (string key);
+		public T get<T> (string key);
 		[Javascript (setter = true)]
-		public void set<V> (string key, V value);
+		public void set<T> (string key, T value);
 		[Javascript (delete = true)]
 		public void delete (string key);
 		[Javascript (static = "Maja.get_keys")]

@@ -229,6 +229,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	const AttributeMap[] dova_attributes = {
 		{"any.equals", "externalized", "true"},
 		{"any.to_string", "camelcase", "true"},
+		{"int.to_string", "camelcase", "true"},
 		{"char", "camelcase", "true"},
 		{"char.to_upper", "name", "\"toUpperCase\""},
 		{"char.to_lower", "name", "\"toLowerCase\""},
@@ -675,8 +676,8 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			} else if (has_out_parameters) {
 				js.stmt (jsmember ("result").assign (result));
 			}
-			emit_control_flow_statement (ControlFlowStatement.RETURN);
 		}
+		emit_control_flow_statement (ControlFlowStatement.RETURN, result != null);
 	}
 
 	public override void visit_break_statement (BreakStatement stmt) {
@@ -1224,13 +1225,17 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return jscode;
 	}
 
-	public void emit_control_flow_statement (ControlFlowStatement control) {
+	public void emit_control_flow_statement (ControlFlowStatement control, bool has_result = false) {
 		if (current_closure_block != null && !is_in_loop (true)) {
 			js.stmt (jsinteger (control).keyword ("return"));
 		} else {
 			switch (control) {
 			case ControlFlowStatement.RETURN:
-				js.stmt (jsmember ("result").keyword ("return"));
+				if (has_result) {
+					js.stmt (jsmember ("result").keyword ("return"));
+				} else {
+					js.stmt (jstext ("return"));
+				}
 				break;
 			case ControlFlowStatement.BREAK:
 				js.stmt (jstext ("break"));

@@ -181,6 +181,7 @@ namespace qx {
 				public layout.Abstract layout;
 				public GroupBox (string legend = "", string icon = "");
 				public void add (core.LayoutItem child, Dova.Map<string,any>? options = null);
+				public void remove (core.LayoutItem child);
 			}
 		}
 		namespace decoration {
@@ -215,6 +216,7 @@ namespace qx {
 		namespace tree {
 			public class Tree : core.scroll.AbstractScrollArea {
 				public AbstractTreeItem root;
+				public bool root_open_close;
 				public Dova.List<AbstractTreeItem> selection;
 				public Dova.List<AbstractTreeItem> children { get; }
 
@@ -226,12 +228,20 @@ namespace qx {
 			}
 			public class AbstractTreeItem : core.Widget {
 				public Tree? tree { get; }
-				public Dova.List<AbstractTreeItem> children { get; }
 				public string label;
+				public int? level;
 				public bool open;
 				public AbstractTreeItem parent;
+				public string open_symbol_mode;
+				public Dova.List<AbstractTreeItem> children { get; }
+
 				public void add (...);
+				public void add_after (AbstractTreeItem item, AbstractTreeItem after);
+				public void add_before (AbstractTreeItem item, AbstractTreeItem before);
+				public void add_at_begin (AbstractTreeItem item);
 				public Dova.List<AbstractTreeItem> get_items (bool recursive = true, bool invisible = true, bool ignore_first = true);
+				public void remove (...);
+				public void remove_all ();
 			}
 			public class TreeFolder : AbstractTreeItem {
 				public TreeFolder (string? label = null);
@@ -315,8 +325,15 @@ namespace qx {
 			}
 			public class RadioGroup : qx.core.Object {
 				public bool allow_empty_selection;
+				public bool enabled;
+				public Dova.List<core.Widget> selection;
+
 				public RadioGroup (...);
 				public void add (...);
+			}
+			public class RadioButton : Button {
+				public bool value;
+				public RadioButton (string? label = null);
 			}
 			public interface IExecutable {
 				public core.Command command { get; set; }
@@ -324,6 +341,7 @@ namespace qx {
 			public class AbstractField : core.Widget {
 				public bool live_update;
 				public string placeholder;
+				public string? value;
 			}
 			public class TextField : AbstractField {
 				public TextField (string? value = null);
@@ -397,6 +415,9 @@ namespace qx {
 		}
 		namespace layout {
 			public class Abstract : qx.core.Object {
+			}
+			public class Canvas : Abstract {
+				public Canvas ();
 			}
 			public class VBox : Abstract {
 				public string separator;
