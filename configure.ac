@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define([maja_major], [0])
-m4_define([maja_minor], [0])
-m4_define([maja_micro], [1])
+m4_define([maja_minor], [1])
+m4_define([maja_micro], [0])
 
 m4_define([maja_version], [maja_major.maja_minor.maja_micro])
 m4_define([maja_api_version], [0.1])
