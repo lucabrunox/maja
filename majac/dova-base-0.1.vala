@@ -251,6 +251,11 @@ public class Dova.Map<K,V> : Dova.Object {
 			return (Dova.Set<V>) array;
 		}
 	}
+	public Dova.Map<K,V> set (K key, V value) {
+		Dova.Map<K,V> res = ((Javascript.Object) this).js_copy ();
+		((Javascript.Object) res)[(string) key] = value;
+		return res;
+	}
 }
 public class Dova.Tuple<T> : Object {
 	public extern int length { get; private set; }

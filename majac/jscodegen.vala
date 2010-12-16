@@ -250,6 +250,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		{"Dova.Set.contains", "externalized", "true"},
 		{"Dova.Set.iterator", "externalized", "true"},
 		{"Dova.Map.get", "getter", "true"},
+		{"Dova.Map.set", "externalized", "true"},
 		{"Dova.Map.keys", "externalized", "true"},
 		{"Dova.Map.values", "externalized", "true"},
 		{"Dova.List.get", "getter", "true"},

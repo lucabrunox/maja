@@ -25,8 +25,8 @@ namespace Javascript {
 		public new bool equals (any? other);
 		[Javascript (equals = true)]
 		public bool js_equals (any? other);
-		[Javascript (copy = true)]
-		public T copy<T> ();
+		[Javascript (static = "Maja.copy_object")]
+		public T js_copy<T> ();
 		[Javascript (getter = true)]
 		public T get<T> (string key);
 		[Javascript (setter = true)]
@@ -124,7 +124,7 @@ namespace Javascript {
 			public Element get_element_by_id (string id);
 		}
 
-		public class Node {
+		public class Node : Object {
 			public void append_child (Node node);
 		}
 

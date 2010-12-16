@@ -10,9 +10,10 @@ Maja.inherit = function (subclass, superclass) {
     subclass.prototype = new helper;
     subclass.prototype.constructor = subclass;
 };
-Maja.mixin = function (dest, over) {
-    for (var key in over)
-	dest[key] = over;
+Maja.copy_object = function (src) {
+    var dest = {};
+    for (var key in src)
+	dest[key] = src[key];
     return dest;
 };
 Maja.array = function (sizes) {
