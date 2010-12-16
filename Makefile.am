@@ -17,4 +17,7 @@ DISTCLEANFILES = \
 
 EXTRA_DIST = \
 	maja-@MAJA_API_VERSION@.pc.in \
+	$(wildcard dova-vapi/*.vapi) \
+	$(wildcard dova-vapi/*.deps) \
+	$(wildcard vapi/*.vapi) \
 	$(NULL)

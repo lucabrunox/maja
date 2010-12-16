@@ -40,7 +40,7 @@ namespace Dova {
 
 		public DOM.Element input (string? type = null, List<DOM.Node>? children = null, Map<string,any>? attributes = null, Map<string,EventCallback>? events = null) {
 			var new_attributes = merge_attributes (attributes, {"type": type});
-			return create_element ("input", children, attributes, events);
+			return create_element ("input", children, new_attributes, events);
 		}
 
 		public DOM.Element textfield (List<DOM.Node>? children = null, Map<string,any>? attributes = null, Map<string,EventCallback>? events = null) {

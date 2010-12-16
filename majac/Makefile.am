@@ -22,14 +22,16 @@ majac_CFLAGS = \
 	$(NULL)
 
 majac_VALAFLAGS = \
-	-g \
 	--vapidir $(top_srcdir)/majac \
 	--pkg config \
 	--pkg gee-1.0 \
 	--pkg $(VALA_PACKAGE) \
+	-g \
 	$(NULL)
 
-all-local: dova-base-0.1.js dova-model-0.1.js dova-js.js
+JS_OBJS = dova-base-0.1.js dova-model-0.1.js dova-js.js
+
+all-local: $(JS_OBJS)
 
 dova-base-0.1.js: dova-base-0.1.vala majac
 	$(builddir)/majac --vapidir $(top_srcdir)/vapi --pkg js-lang --nostdpkg $<
@@ -39,3 +41,15 @@ dova-model-0.1.js: dova-model-0.1.vala majac
 
 dova-js.js: dova-js.vala majac
 	$(builddir)/majac --vapidir $(top_srcdir)/dova-vapi --vapidir $(top_srcdir)/vapi --library dova-js $<
+
+EXTRA_DIST = \
+	maja-utils.js \
+	dova-base-0.1.vala \
+	dova-model-0.1.vala \
+	dova-js.vala \
+	$(NULL)
+
+CLEANFILES = \
+	$(JS_OBJS) \
+	dova-js.vapi \
+	$(NULL)
