@@ -1402,7 +1402,22 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		return null;
 	}
 
-	public override void store_local (LocalVariable local, TargetValue value) {}
+	public override void store_local (LocalVariable local, TargetValue value, bool initializer) {
+	}
+
+	public override TargetValue load_parameter (Vala.Parameter param) {
+		return null;
+	}
+
+	public override void store_parameter (Vala.Parameter param, TargetValue value) {
+	}
+
+	public override TargetValue load_field (Field field, TargetValue? instance) {
+		return null;
+	}
+
+	public override void store_field (Field field, TargetValue? instance, TargetValue value) {
+	}
 }
 
 public class Maja.JSValue : TargetValue {

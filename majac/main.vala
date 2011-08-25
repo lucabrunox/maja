@@ -1,6 +1,6 @@
 /* main.vala
  *
- * Copyright (C) 2010  Luca Bruno
+ * Copyright (C) 2010, 2011  Luca Bruno
  * Copyright (C) 2006-2010  Jürg Billeter
  * Copyright (C) 1996-2002, 2004, 2005, 2006 Free Software Foundation, Inc.
  *
@@ -119,10 +119,11 @@ class Maja.Compiler {
 		// default to build executable
 		if (output == null) {
 			// strip extension if there is one
-			// else we use the default output file of the C compiler
-			if (sources[0].rchr (-1, '.') != null) {
-				long dot = sources[0].pointer_to_offset (sources[0].rchr (-1, '.'));
+			if (sources[0].last_index_of_char ('.') != -1) {
+				int dot = sources[0].last_index_of_char ('.');
 				output = Path.get_basename (sources[0].substring (0, dot));
+			} else {
+				output = sources[0];
 			}
 		}
 

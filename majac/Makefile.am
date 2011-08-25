@@ -33,13 +33,13 @@ JS_OBJS = dova-base-0.1.js dova-model-0.1.js dova-js.js
 
 all-local: $(JS_OBJS)
 
-dova-base-0.1.js: dova-base-0.1.vala majac
+dova-base-0.1.js: dova-base-0.1.vala $(builddir)/majac
 	$(builddir)/majac --vapidir $(top_srcdir)/vapi --pkg js-lang --nostdpkg $<
 
-dova-model-0.1.js: dova-model-0.1.vala majac
+dova-model-0.1.js: dova-model-0.1.vala $(builddir)/majac
 	$(builddir)/majac --vapidir $(top_srcdir)/dova-vapi --vapidir $(top_srcdir)/vapi --pkg js-lang $<
 
-dova-js.js: dova-js.vala majac
+dova-js.js: dova-js.vala $(builddir)/majac
 	$(builddir)/majac --vapidir $(top_srcdir)/dova-vapi --vapidir $(top_srcdir)/vapi --library dova-js $<
 
 EXTRA_DIST = \

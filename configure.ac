@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 m4_define([maja_major], [0])
-m4_define([maja_minor], [1])
+m4_define([maja_minor], [2])
 m4_define([maja_micro], [0])
 
 m4_define([maja_version], [maja_major.maja_minor.maja_micro])
@@ -41,7 +41,7 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AM_PROG_VALAC($VALA_REQUIRED)
 
-VALA_PACKAGE=libvala-0.12
+VALA_PACKAGE=libvala-0.14
 AC_SUBST(VALA_PACKAGE)
 
 # Checks for libraries.
