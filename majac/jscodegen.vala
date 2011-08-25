@@ -1403,6 +1403,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void store_local (LocalVariable local, TargetValue value, bool initializer) {
+		js.stmt (jsmember(get_variable_jsname (local.name)).assign (((JSValue) value).jscode));
 	}
 
 	public override TargetValue load_parameter (Vala.Parameter param) {
