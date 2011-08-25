@@ -487,21 +487,21 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 				}*/
 
 			var param_list = (JSList) js.current.expr;
-			param_list.add_string ("param_"+param.name);
+			param_list.add_string (param.name);
 			// initialize default
 			// declare local variable for parameter
-			js.stmt (jsvar(param.name));
-			js.open_if (jsmember("param_"+param.name).direct_inequal (jsundefined ()));
+			js.stmt (jsvar("_maja_"+param.name));
+			js.open_if (jsmember(param.name).direct_inequal (jsundefined ()));
 			if (!param.variable_type.nullable) {
-				js.open_if (jsmember("param_"+param.name).direct_equal (jsnull ()));
+				js.open_if (jsmember(param.name).direct_equal (jsnull ()));
 				js.error (jsstring ("Unexpected null parameter '"+param.name+"'"));
 				js.close ();
 			}
-			js.stmt (jsmember(param.name).assign (jsmember("param_"+param.name)));
+			js.stmt (jsmember("_maja_"+param.name).assign (jsmember(param.name)));
 			js.add_else ();
 			if (param.initializer != null) {
 				param.initializer.emit (this);
-				js.stmt (jsmember(param.name).assign (get_jsvalue (param.initializer)));
+				js.stmt (jsmember("_maja_"+param.name).assign (get_jsvalue (param.initializer)));
 			} else {
 				js.error (jsstring ("Undefined parameter '"+param.name+"'"));
 			}
@@ -514,7 +514,7 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 			} else {
 				rhs = jsnull ();
 			}
-			js.stmt (jsvar(param.name).assign (rhs));
+			js.stmt (jsvar("_maja_"+param.name).assign (rhs));
 		}
 	}
 
@@ -701,8 +701,10 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 		var sym = ma.symbol_reference;
 		if (ma.inner == null && ma.member_name == "this") {
 			jscode = jsmember ("this");
-		} else if (sym is LocalVariable || sym is Vala.Parameter) {
+		} else if (sym is LocalVariable) {
 			jscode = jsmember (get_variable_jsname (ma.member_name));
+		} else if (sym is Vala.Parameter) {
+			jscode = jsmember ("_maja_"+ma.member_name);
 		} else {
 			if (ma.inner != null && ma.inner.symbol_reference != javascript_ns) {
 				jscode = jsexpr (get_jsvalue (ma.inner));
