@@ -1418,6 +1418,22 @@ public class Maja.JSCodeGenerator : CodeGenerator {
 	}
 
 	public override void store_field (Field field, TargetValue? instance, TargetValue value) {
+		JSExpressionBuilder jscode = null;
+		if (instance != null) {
+			jscode = jsexpr (((JSValue) instance).jscode);
+		} else if (field.parent_symbol != null && field.parent_symbol != root_symbol && field.parent_symbol != javascript_ns) {
+			jscode = jsmember (get_symbol_full_jsname (field.parent_symbol));
+		} else {
+			jscode = jsexpr ();
+		}
+		var member_name = get_symbol_jsname (field);
+		if (get_javascript_bool (field, "externalized")) {
+			jscode = jsbind (jsmember (get_symbol_full_jsname (field, member_name)), ((JSValue) instance).jscode);
+		} else {
+			jscode.member (member_name);
+		}
+
+		js.stmt (jscode.assign (((JSValue) value).jscode));
 	}
 }
 
